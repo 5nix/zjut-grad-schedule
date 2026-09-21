@@ -1,7 +1,7 @@
 import { createServer } from "node:http";
 import { createHash } from "node:crypto";
 import { CaptchaRequiredError, HttpError, ZjutClient } from "./lib/cas-client.mjs";
-import { fetchAllCalendarData, renderCalendar } from "./lib/calendar.mjs";
+import { fetchAllCalendarData, renderCalendar, toScheduleEvents } from "./lib/calendar.mjs";
 import { CalendarStore } from "./lib/calendar-store.mjs";
 import { CredentialStore } from "./lib/credential-store.mjs";
 import { EventLog } from "./lib/event-log.mjs";
@@ -183,6 +183,7 @@ async function refreshCalendar(studentId) {
   const fetchedAt = new Date();
   const feed = {
     ics: rendered.ics,
+    events: toScheduleEvents(rendered.events),
     eventCount: rendered.eventCount,
     warningCount: rendered.warnings.length,
     etag: `"${createHash("sha256").update(rendered.ics).digest("hex")}"`,
@@ -220,6 +221,20 @@ function staleFeed(snapshot, now) {
     // 让下一次客户端请求继续尝试更新上游。
     expiresAt: now,
     stale: true,
+  };
+}
+
+function schedulePayload(feed) {
+  if (!Array.isArray(feed.events)) {
+    throw new HttpError("结构化课程快照尚未生成", { status: 503 });
+  }
+  return {
+    version: 1,
+    updatedAt: feed.fetchedAt,
+    stale: Boolean(feed.stale),
+    eventCount: feed.eventCount,
+    warningCount: feed.warningCount,
+    events: feed.events,
   };
 }
 
@@ -446,6 +461,38 @@ async function handle(request, response) {
     }
     response.writeHead(200, headers);
     response.end(feed.ics);
+    return;
+  }
+
+  if (request.method === "GET" && requestUrl.pathname === "/api/schedule") {
+    const session = verifySessionToken(bearer(request));
+    if (!session) {
+      json(response, 401, { code: "unauthorized", message: "登录状态无效" });
+      return;
+    }
+    const startedAt = Date.now();
+    let result;
+    let payload;
+    try {
+      result = await getCalendarFeed(session.sub);
+      payload = schedulePayload(result.feed);
+    } catch (error) {
+      eventLog.write("schedule_request", {
+        studentId: session.sub,
+        state: "failed",
+        status: error.status ?? null,
+        durationMs: Date.now() - startedAt,
+      });
+      throw error;
+    }
+    eventLog.write("schedule_request", {
+      studentId: session.sub,
+      state: result.state,
+      eventCount: payload.eventCount,
+      warningCount: payload.warningCount,
+      durationMs: Date.now() - startedAt,
+    });
+    json(response, 200, payload, result.feed.stale ? { "x-calendar-stale": "true" } : {});
     return;
   }
 
