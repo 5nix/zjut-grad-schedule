@@ -1,4 +1,4 @@
-# ZJUT 研究生课表
+# ZJUT 研究生课表订阅
 
 [在线使用：https://zjutgs.ironip.ink](https://zjutgs.ironip.ink)
 
