@@ -680,17 +680,21 @@ button { cursor: pointer; }
   .workspace-actions .primary-button { grid-column: 1 / -1; }
   .workspace-actions__error { grid-column: 1 / -1; }
   .schedule-frame {
-    min-height: 560px;
+    min-height: 0;
     margin-top: 14px;
   }
   .schedule-frame .df-calendar-container {
-    min-height: 560px;
+    min-height: 0;
     height: calc(100vh - 235px);
+    height: calc(100dvh - 235px);
   }
   .schedule-frame .df-mobile-event-drawer-panel {
     height: auto;
     max-height: min(68vh, 520px);
     background-color: var(--df-color-card, #fff);
+  }
+  .schedule-frame .df-mobile-event-drawer-body {
+    padding-bottom: max(84px, calc(16px + env(safe-area-inset-bottom, 0px)));
   }
   .schedule-frame .df-mobile-event-drawer-backdrop {
     background-color: rgba(15, 15, 15, 0.1);
@@ -704,7 +708,11 @@ button { cursor: pointer; }
   .schedule-frame .df-day-content-header-wrap .df-view-header-container {
     align-items: flex-start;
   }
-  .schedule-state { min-height: 560px; }
+  .schedule-state {
+    min-height: 0;
+    height: calc(100vh - 235px);
+    height: calc(100dvh - 235px);
+  }
 
   /* DayFlow 的中文 narrow weekday 会全部变成“周”，手机端改回完整星期名。 */
   .schedule-frame .df-week-all-day-weekday-label { font-size: 0; }
@@ -758,7 +766,11 @@ button { cursor: pointer; }
   .brand-mark { width: 32px; height: 32px; }
 
   .workspace h1 { font-size: 31px; }
-  .schedule-frame .df-calendar-container { height: calc(100vh - 245px); }
+  .schedule-frame .df-calendar-container,
+  .schedule-state {
+    height: calc(100vh - 245px);
+    height: calc(100dvh - 245px);
+  }
 
   .hero {
     padding: 42px 0 52px;
