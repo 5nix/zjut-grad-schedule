@@ -24,8 +24,6 @@ const loginFailures = new Map();
 const authCooldowns = new Map();
 
 const calendarCacheMs = positiveInteger("CALENDAR_CACHE_SECONDS", 600) * 1000;
-const calendarStaleMs = positiveInteger("CALENDAR_STALE_SECONDS", 3 * 24 * 60 * 60) * 1000;
-const calendarRetryMs = positiveInteger("CALENDAR_FAILURE_RETRY_SECONDS", 300) * 1000;
 const activeClientMs = positiveInteger("ACTIVE_CLIENT_SECONDS", 60 * 60) * 1000;
 const loginWindowMs = positiveInteger("LOGIN_RATE_WINDOW_SECONDS", 600) * 1000;
 const maxIpLoginFailures = positiveInteger("LOGIN_IP_FAILURE_LIMIT", 20);
@@ -211,13 +209,14 @@ async function refreshCalendar(studentId) {
 
 function staleFeed(snapshot, now) {
   const fetchedAt = Date.parse(snapshot.fetchedAt);
-  if (!Number.isFinite(fetchedAt) || now - fetchedAt > calendarStaleMs) return null;
+  if (!Number.isFinite(fetchedAt)) return null;
   const ics = String(snapshot.ics);
   return {
     ...snapshot,
     etag: snapshot.etag || `"${createHash("sha256").update(ics).digest("hex")}"`,
     lastModified: snapshot.lastModified || new Date(fetchedAt).toUTCString(),
-    expiresAt: now + calendarRetryMs,
+    // 让下一次客户端请求继续尝试更新上游。
+    expiresAt: now,
     stale: true,
   };
 }
@@ -312,7 +311,7 @@ function cleanupRuntimeState() {
     if (entry.lastUsedAt + activeClientMs <= now) clients.delete(studentId);
   }
   for (const [studentId, feed] of calendarCache) {
-    if (feed.expiresAt + calendarRetryMs <= now) calendarCache.delete(studentId);
+    if (feed.stale || feed.expiresAt + calendarCacheMs <= now) calendarCache.delete(studentId);
   }
   pruneLoginFailures(now);
   for (const [studentId, until] of authCooldowns) {
