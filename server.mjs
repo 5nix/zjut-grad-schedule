@@ -4,6 +4,7 @@ import { CaptchaRequiredError, HttpError, ZjutClient } from "./lib/cas-client.mj
 import { fetchAllCalendarData, renderCalendar } from "./lib/calendar.mjs";
 import { CalendarStore } from "./lib/calendar-store.mjs";
 import { CredentialStore } from "./lib/credential-store.mjs";
+import { EventLog } from "./lib/event-log.mjs";
 import { createSessionToken, verifySessionToken } from "./lib/session-token.mjs";
 
 function positiveInteger(name, fallback) {
@@ -14,6 +15,7 @@ function positiveInteger(name, fallback) {
 const port = positiveInteger("PORT", 8787);
 const credentialStore = new CredentialStore();
 const calendarStore = new CalendarStore();
+const eventLog = new EventLog();
 
 // 内存中的对象只服务于活跃请求；可恢复状态在磁盘中保存。
 const clients = new Map();
@@ -224,24 +226,20 @@ function staleFeed(snapshot, now) {
 async function getCalendarFeed(studentId) {
   const now = Date.now();
   const cached = calendarCache.get(studentId);
-  if (cached && cached.expiresAt > now) return cached;
+  if (cached && cached.expiresAt > now) return { feed: cached, state: "cache_hit" };
 
   const pending = calendarRefreshes.get(studentId);
   if (pending) return pending;
 
   const refresh = (async () => {
     try {
-      return await refreshCalendar(studentId);
+      return { feed: await refreshCalendar(studentId), state: "upstream_refresh" };
     } catch (error) {
       const snapshot = await calendarStore.load(studentId);
       const fallback = snapshot ? staleFeed(snapshot, Date.now()) : null;
       if (!fallback) throw error;
       calendarCache.set(studentId, fallback);
-      console.warn(JSON.stringify({
-        event: "calendar_stale_fallback",
-        ageSeconds: Math.max(0, Math.floor((Date.now() - Date.parse(snapshot.fetchedAt)) / 1000)),
-      }));
-      return fallback;
+      return { feed: fallback, state: "stale_fallback" };
     }
   })();
   calendarRefreshes.set(studentId, refresh);
@@ -413,7 +411,27 @@ async function handle(request, response) {
       response.end("calendar token expired");
       return;
     }
-    const feed = await getCalendarFeed(session.sub);
+    const startedAt = Date.now();
+    let result;
+    try {
+      result = await getCalendarFeed(session.sub);
+    } catch (error) {
+      eventLog.write("calendar_request", {
+        studentId: session.sub,
+        state: "failed",
+        status: error.status ?? null,
+        durationMs: Date.now() - startedAt,
+      });
+      throw error;
+    }
+    const { feed, state } = result;
+    eventLog.write("calendar_request", {
+      studentId: session.sub,
+      state,
+      eventCount: feed.eventCount,
+      warningCount: feed.warningCount,
+      durationMs: Date.now() - startedAt,
+    });
     const headers = {
       "content-type": "text/calendar; charset=utf-8",
       "cache-control": "private, max-age=300",
