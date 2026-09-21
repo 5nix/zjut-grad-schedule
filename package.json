@@ -4,7 +4,8 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "start": "node server.mjs"
+    "start": "node server.mjs",
+    "dev:server": "node --env-file-if-exists=.env.local server.mjs"
   },
   "engines": {
     "node": ">=20"

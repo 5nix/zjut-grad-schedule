@@ -1,4 +1,4 @@
-import { lazy, Suspense, useId, useState } from 'react'
+import { lazy, Suspense, useEffect, useId, useState } from 'react'
 
 const ScheduleWorkspace = lazy(() => import('./ScheduleWorkspace.jsx'))
 
@@ -104,6 +104,7 @@ function LoginForm({ onSuccess }) {
       const response = await fetch(`${API_BASE}/api/login`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ studentId: cleanStudentId, password }),
       })
       const payload = await response.json().catch(() => ({}))
@@ -113,7 +114,7 @@ function LoginForm({ onSuccess }) {
         return
       }
 
-      if (!payload?.token || !payload?.calendarUrl) {
+      if (!payload?.calendarUrl) {
         setNotice({ type: 'error', title: '返回数据不完整', message: '服务未返回有效的订阅地址，请稍后重试。' })
         return
       }
@@ -121,7 +122,6 @@ function LoginForm({ onSuccess }) {
       setPassword('')
       onSuccess({
         studentId: payload.studentId || cleanStudentId,
-        token: payload.token,
         calendarUrl: payload.calendarUrl,
       })
     } catch {
@@ -189,6 +189,31 @@ function LoginForm({ onSuccess }) {
 
 export default function App() {
   const [result, setResult] = useState(null)
+  const [sessionReady, setSessionReady] = useState(false)
+
+  useEffect(() => {
+    const controller = new AbortController()
+
+    async function restoreSession() {
+      try {
+        const response = await fetch(`${API_BASE}/api/session`, {
+          credentials: 'include',
+          signal: controller.signal,
+        })
+        if (!response.ok) return
+        const payload = await response.json().catch(() => ({}))
+        if (!payload?.studentId || !payload?.calendarUrl) return
+        setResult({ studentId: payload.studentId, calendarUrl: payload.calendarUrl })
+      } catch (error) {
+        if (error.name !== 'AbortError') return
+      } finally {
+        if (!controller.signal.aborted) setSessionReady(true)
+      }
+    }
+
+    restoreSession()
+    return () => controller.abort()
+  }, [])
 
   return (
     <div className={`site-shell ${result ? 'site-shell--workspace' : ''}`}>
@@ -201,8 +226,13 @@ export default function App() {
         </a>
       </header>
 
-      <main className={result ? 'workspace-main' : 'hero'}>
-        {result ? (
+      <main className={result || !sessionReady ? 'workspace-main' : 'hero'}>
+        {!sessionReady ? (
+          <div className="workspace-load-fallback">
+            <span className="spinner spinner--blue" aria-hidden="true" />
+            正在检查登录状态
+          </div>
+        ) : result ? (
           <Suspense fallback={<div className="workspace-load-fallback"><span className="spinner spinner--blue" aria-hidden="true" />正在打开课程表</div>}>
             <ScheduleWorkspace result={result} onReset={() => setResult(null)} />
           </Suspense>

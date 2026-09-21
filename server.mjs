@@ -27,6 +27,8 @@ const authCooldowns = new Map();
 
 const calendarCacheMs = positiveInteger("CALENDAR_CACHE_SECONDS", 600) * 1000;
 const activeClientMs = positiveInteger("ACTIVE_CLIENT_SECONDS", 60 * 60) * 1000;
+const sessionCookieName = "zjut_session";
+const sessionCookieMaxAge = positiveInteger("SESSION_COOKIE_MAX_AGE_SECONDS", 365 * 24 * 60 * 60);
 const loginWindowMs = positiveInteger("LOGIN_RATE_WINDOW_SECONDS", 600) * 1000;
 const maxIpLoginFailures = positiveInteger("LOGIN_IP_FAILURE_LIMIT", 20);
 const maxStudentLoginFailures = positiveInteger("LOGIN_STUDENT_FAILURE_LIMIT", 6);
@@ -50,6 +52,7 @@ function corsHeaders() {
     "access-control-allow-origin": origin,
     "access-control-allow-headers": "authorization, content-type",
     "access-control-allow-methods": "GET, POST, OPTIONS",
+    "access-control-allow-credentials": "true",
     vary: "Origin",
   } : {};
 }
@@ -63,9 +66,39 @@ async function readJson(request) {
   return body ? JSON.parse(body) : {};
 }
 
+function cookieValue(request, name) {
+  const cookieHeader = request.headers.cookie ?? "";
+  for (const part of cookieHeader.split(";")) {
+    const separator = part.indexOf("=");
+    if (separator < 0) continue;
+    const key = part.slice(0, separator).trim();
+    if (key !== name) continue;
+    const value = part.slice(separator + 1).trim();
+    try {
+      return decodeURIComponent(value);
+    } catch {
+      return value;
+    }
+  }
+  return "";
+}
+
 function bearer(request) {
   const value = request.headers.authorization ?? "";
-  return value.startsWith("Bearer ") ? value.slice(7) : "";
+  return value.startsWith("Bearer ") ? value.slice(7) : cookieValue(request, sessionCookieName);
+}
+
+function sessionCookie(token) {
+  const secure = process.env.COOKIE_SECURE === "true"
+    || (process.env.COOKIE_SECURE !== "false" && process.env.PUBLIC_BASE_URL?.startsWith("https://"));
+  return [
+    `${sessionCookieName}=${encodeURIComponent(token)}`,
+    `Max-Age=${sessionCookieMaxAge}`,
+    "Path=/",
+    "HttpOnly",
+    "SameSite=Lax",
+    secure ? "Secure" : "",
+  ].filter(Boolean).join("; ");
 }
 
 function rememberClient(studentId, client) {
@@ -158,6 +191,17 @@ function loginPayload(studentId, token) {
     studentId,
     calendarUrl: `${publicBase}${calendarPath}`,
     message: "登录成功",
+  };
+}
+
+function restoredSessionPayload(studentId) {
+  const token = createSessionToken(studentId);
+  const { calendarUrl } = loginPayload(studentId, token);
+  return {
+    authenticated: true,
+    studentId,
+    calendarUrl,
+    message: "登录状态已恢复",
   };
 }
 
@@ -351,6 +395,16 @@ async function handle(request, response) {
     return;
   }
 
+  if (request.method === "GET" && requestUrl.pathname === "/api/session") {
+    const session = verifySessionToken(bearer(request));
+    if (!session) {
+      json(response, 200, { authenticated: false });
+      return;
+    }
+    json(response, 200, restoredSessionPayload(session.sub));
+    return;
+  }
+
   if (request.method === "POST" && requestUrl.pathname === "/api/login") {
     let input;
     try {
@@ -383,7 +437,8 @@ async function handle(request, response) {
         await persistClientCookies(studentId, previousClient);
         clearLoginFailures(request, studentId);
         rememberClient(studentId, previousClient);
-        json(response, 200, loginPayload(studentId, createSessionToken(studentId)));
+        const token = createSessionToken(studentId);
+        json(response, 200, loginPayload(studentId, token), { "set-cookie": sessionCookie(token) });
         return;
       } catch (error) {
         if (!sessionInvalid(error)) throw error;
@@ -412,7 +467,7 @@ async function handle(request, response) {
 
     clearLoginFailures(request, studentId);
     rememberClient(studentId, client);
-    json(response, 200, loginPayload(studentId, token));
+    json(response, 200, loginPayload(studentId, token), { "set-cookie": sessionCookie(token) });
     return;
   }
 

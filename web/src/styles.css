@@ -371,13 +371,6 @@ button { cursor: pointer; }
   margin: 0 0 8px -12px;
 }
 
-.workspace-kicker {
-  margin: 0 0 5px;
-  color: var(--muted);
-  font-size: 12px;
-  font-weight: 600;
-}
-
 .workspace h1 {
   margin: 0;
   color: var(--ink);
@@ -385,14 +378,6 @@ button { cursor: pointer; }
   font-weight: 680;
   line-height: 1;
   letter-spacing: -0.055em;
-}
-
-.workspace-subtitle {
-  max-width: 640px;
-  margin: 9px 0 0;
-  color: var(--muted);
-  font-size: 13px;
-  line-height: 1.45;
 }
 
 .workspace-actions {
@@ -409,6 +394,10 @@ button { cursor: pointer; }
   min-height: 40px;
   padding: 0 14px;
   font-size: 13px;
+}
+
+.workspace-actions svg {
+  flex: 0 0 auto;
 }
 
 .workspace-actions__error {
@@ -441,8 +430,9 @@ button { cursor: pointer; }
   --df-color-card-foreground: var(--ink);
   --df-color-muted: #f6f5f4;
   --df-color-muted-foreground: var(--muted);
-  --df-color-primary: var(--blue);
-  --df-color-primary-foreground: #fff;
+  --df-color-primary: var(--yellow);
+  --df-color-primary-foreground: var(--ink);
+  --df-color-ring: var(--yellow);
 }
 
 .schedule-frame .df-header {
@@ -452,6 +442,28 @@ button { cursor: pointer; }
 .schedule-frame .df-event-detail-panel,
 .schedule-frame .df-dialog-container {
   font-family: inherit;
+}
+
+.schedule-frame .df-agenda-title,
+.schedule-frame .df-agenda-badge {
+  white-space: pre-line;
+}
+
+.schedule-frame .df-agenda-view .df-view-header-title {
+  align-items: baseline;
+  display: flex;
+  gap: 8px;
+}
+
+.schedule-frame .df-agenda-view .schedule-agenda-title-year {
+  color: var(--df-color-muted-foreground);
+  font-size: 0.5em;
+  font-weight: 500;
+  line-height: 1;
+}
+
+.schedule-frame .schedule-mobile-day-nav {
+  display: none;
 }
 
 .schedule-state {
@@ -618,7 +630,50 @@ button { cursor: pointer; }
     min-height: 560px;
     height: calc(100vh - 235px);
   }
+  .schedule-frame .df-mobile-event-drawer-panel {
+    height: auto;
+    max-height: min(68vh, 520px);
+    background-color: var(--df-color-card, #fff);
+  }
+  .schedule-frame .df-mobile-event-drawer-backdrop {
+    background-color: rgba(15, 15, 15, 0.1);
+  }
+  .schedule-frame .schedule-mobile-day-nav {
+    display: flex;
+    align-self: flex-start;
+    margin-top: 2px;
+    margin-right: -1px;
+  }
+  .schedule-frame .df-day-content-header-wrap .df-view-header-container {
+    align-items: flex-start;
+  }
   .schedule-state { min-height: 560px; }
+
+  /* DayFlow 的中文 narrow weekday 会全部变成“周”，手机端改回完整星期名。 */
+  .schedule-frame .df-week-all-day-weekday-label { font-size: 0; }
+  .schedule-frame .df-week-all-day-weekday-cell:nth-child(1) .df-week-all-day-weekday-label::after { content: '周一'; }
+  .schedule-frame .df-week-all-day-weekday-cell:nth-child(2) .df-week-all-day-weekday-label::after { content: '周二'; }
+  .schedule-frame .df-week-all-day-weekday-cell:nth-child(3) .df-week-all-day-weekday-label::after { content: '周三'; }
+  .schedule-frame .df-week-all-day-weekday-cell:nth-child(4) .df-week-all-day-weekday-label::after { content: '周四'; }
+  .schedule-frame .df-week-all-day-weekday-cell:nth-child(5) .df-week-all-day-weekday-label::after { content: '周五'; }
+  .schedule-frame .df-week-all-day-weekday-cell:nth-child(6) .df-week-all-day-weekday-label::after { content: '周六'; }
+  .schedule-frame .df-week-all-day-weekday-cell:nth-child(7) .df-week-all-day-weekday-label::after { content: '周日'; }
+  .schedule-frame .df-week-all-day-weekday-label::after {
+    font-size: 12px;
+    line-height: 1.1;
+  }
+  .schedule-frame .df-compact-header-label { font-size: 0; }
+  .schedule-frame .df-compact-header-label-cell:nth-child(1) .df-compact-header-label::after { content: '周一'; }
+  .schedule-frame .df-compact-header-label-cell:nth-child(2) .df-compact-header-label::after { content: '周二'; }
+  .schedule-frame .df-compact-header-label-cell:nth-child(3) .df-compact-header-label::after { content: '周三'; }
+  .schedule-frame .df-compact-header-label-cell:nth-child(4) .df-compact-header-label::after { content: '周四'; }
+  .schedule-frame .df-compact-header-label-cell:nth-child(5) .df-compact-header-label::after { content: '周五'; }
+  .schedule-frame .df-compact-header-label-cell:nth-child(6) .df-compact-header-label::after { content: '周六'; }
+  .schedule-frame .df-compact-header-label-cell:nth-child(7) .df-compact-header-label::after { content: '周日'; }
+  .schedule-frame .df-compact-header-label::after {
+    font-size: 10px;
+    line-height: 1.1;
+  }
 
   .hero {
     min-height: auto;
@@ -647,7 +702,6 @@ button { cursor: pointer; }
 
   .site-shell--workspace .site-header { height: 52px; }
   .workspace h1 { font-size: 31px; }
-  .workspace-subtitle { font-size: 12px; }
   .schedule-frame .df-calendar-container { height: calc(100vh - 245px); }
 
   .hero {

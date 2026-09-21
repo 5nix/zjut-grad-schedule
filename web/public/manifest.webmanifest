@@ -1,0 +1,26 @@
+{
+  "id": "/",
+  "name": "浙工大研究生课表",
+  "short_name": "浙工大课表",
+  "description": "浙江工业大学研究生课程表查看与 ICS 订阅",
+  "start_url": "/",
+  "scope": "/",
+  "display": "standalone",
+  "background_color": "#f6f5f4",
+  "theme_color": "#f6f5f4",
+  "lang": "zh-CN",
+  "icons": [
+    {
+      "src": "/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

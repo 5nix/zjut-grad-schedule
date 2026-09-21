@@ -1,14 +1,44 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import {
   DayFlowCalendar,
   ViewType,
+  createAgendaView,
+  createDayView,
   createMonthView,
   createWeekView,
+  formatEventTimeRange,
   useCalendarApp,
 } from '@dayflow/react'
 import { Temporal } from 'temporal-polyfill'
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
+
+function Icon({ name, size = 18 }) {
+  const common = {
+    width: size,
+    height: size,
+    viewBox: '0 0 24 24',
+    fill: 'none',
+    stroke: 'currentColor',
+    strokeWidth: 1.8,
+    strokeLinecap: 'round',
+    strokeLinejoin: 'round',
+    'aria-hidden': true,
+  }
+
+  const paths = {
+    back: <><path d="m15 18-6-6 6-6" /><path d="M9 12h10" /></>,
+    previous: <path d="m15 18-6-6 6-6" />,
+    next: <path d="m9 18 6-6-6-6" />,
+    calendar: <><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M16 3v4M8 3v4M3 10h18" /></>,
+    check: <path d="m5 12 4 4L19 6" />,
+    copy: <><rect x="8" y="8" width="11" height="11" rx="2" /><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" /></>,
+    download: <><path d="M12 3v12" /><path d="m7 10 5 5 5-5" /><path d="M5 21h14" /></>,
+  }
+
+  return <svg {...common}>{paths[name]}</svg>
+}
 
 const ZH_LOCALE = {
   code: 'zh-CN',
@@ -20,7 +50,6 @@ const ZH_LOCALE = {
     day: '日',
     week: '周',
     month: '月',
-    year: '年',
     agenda: '列表',
     viewEvent: '课程详情',
     done: '完成',
@@ -61,6 +90,7 @@ function toCalendarEvents(events) {
     calendarId: 'courses',
     allDay: false,
     meta: {
+      displayTitle: event.title,
       location: event.location,
       campus: event.campus,
       semester: event.semester,
@@ -87,12 +117,26 @@ function formatDateTime(value) {
 
 function CourseDetail({ event, onClose }) {
   const meta = event.meta || {}
+  const title = meta.displayTitle || event.title
+  const repeatedFields = [meta.location, meta.campus, meta.semester, meta.lessonText]
+    .filter(Boolean)
+    .map((value) => String(value).trim())
+  const description = String(event.description || '')
+    .split(/\r?\n/)
+    .map((line) => line.trim())
+    .filter(Boolean)
+    .filter((line) => {
+      const value = line.replace(/^(地点|校区|学期|课次|备注)\s*[：:]\s*/, '').trim()
+      return !repeatedFields.includes(line) && !repeatedFields.includes(value)
+    })
+    .map((line) => line.replace(/^备注\s*[：:]\s*/, '').trim())
+    .join('\n')
   return (
     <div className="course-detail">
       <div className="course-detail__heading">
         <span className="course-detail__mark" aria-hidden="true" />
         <div>
-          <h3>{event.title}</h3>
+          <h3>{title}</h3>
           <p>{formatDateTime(event.start)} — {formatDateTime(event.end).split(' ').at(-1)}</p>
         </div>
       </div>
@@ -101,17 +145,76 @@ function CourseDetail({ event, onClose }) {
         {meta.campus && <><dt>校区</dt><dd>{meta.campus}</dd></>}
         {meta.semester && <><dt>学期</dt><dd>{meta.semester}</dd></>}
         {meta.lessonText && <><dt>课次</dt><dd>{meta.lessonText}</dd></>}
-        {event.description && <><dt>备注</dt><dd className="course-detail__description">{event.description}</dd></>}
+        {description && <><dt>备注</dt><dd className="course-detail__description">{description}</dd></>}
       </dl>
       {onClose && <button className="course-detail__close" type="button" onClick={onClose}>关闭</button>}
     </div>
   )
 }
 
+function CourseTimedEventContent({ event }) {
+  const meta = event.meta || {}
+  const title = meta.displayTitle || event.title.split('\n')[0]
+  const durationHours = (event.end.epochMilliseconds - event.start.epochMilliseconds) / 3_600_000
+  const density = durationHours <= 0.25 ? 'compact' : 'default'
+
+  return (
+    <>
+      <div
+        className="df-event-color-bar"
+        style={{ backgroundColor: COURSE_CALENDAR.colors.lineColor }}
+      />
+      <div className="df-event-timed-content" data-density={density}>
+        <div className={`df-event-title ${density === 'compact' ? 'df-event-title-tight' : ''}`}>
+          {title}
+        </div>
+        {durationHours > 0.5 && (
+          <div className="df-event-time">{formatEventTimeRange(event, '24h')}</div>
+        )}
+        {meta.location && <div className="df-event-time">{meta.location}</div>}
+      </div>
+    </>
+  )
+}
+
+function MobileCourseDetail({ isOpen, draftEvent, onClose }) {
+  if (!isOpen || !draftEvent) return null
+
+  return (
+    <div className="df-portal df-mobile-event-drawer">
+      <div className="df-mobile-event-drawer-backdrop" onClick={onClose} />
+      <div className="df-mobile-event-drawer-panel df-animate-slide-up" onClick={(event) => event.stopPropagation()}>
+        <div className="df-mobile-event-drawer-header">
+          <button className="df-mobile-event-drawer-header-action" type="button" onClick={onClose}>
+            取消
+          </button>
+          <span className="df-mobile-event-drawer-title">课程详情</span>
+          <span className="df-mobile-event-drawer-header-spacer" />
+        </div>
+        <div className="df-mobile-event-drawer-body">
+          <CourseDetail event={draftEvent} />
+        </div>
+      </div>
+    </div>
+  )
+}
+
 function ScheduleCalendar({ events }) {
+  const [activeView, setActiveView] = useState(ViewType.WEEK)
+  const [dayHeaderHost, setDayHeaderHost] = useState(null)
+  const calendarRootRef = useRef(null)
   const calendarEvents = useMemo(() => toCalendarEvents(events), [events])
   const calendar = useCalendarApp({
     views: [
+      createDayView({
+        label: '日',
+        firstHour: 7,
+        lastHour: 23,
+        hourHeight: 56,
+        timeFormat: '24h',
+        showAllDay: false,
+        scrollToCurrentTime: false,
+      }),
       createWeekView({
         label: '周',
         firstHour: 7,
@@ -132,9 +235,16 @@ function ScheduleCalendar({ events }) {
         showWeekNumbers: false,
         showMonthIndicator: true,
       }),
+      createAgendaView({
+        label: '列表',
+        daysToShow: 14,
+        showEmptyDays: false,
+        gridDateClick: 'none',
+        gridDateDoubleClick: 'none',
+      }),
     ],
     events: calendarEvents,
-    defaultView: ViewType.WEEK,
+    defaultView: ViewType.MONTH,
     defaultCalendar: 'courses',
     calendars: [COURSE_CALENDAR],
     initialDate: new Date(),
@@ -153,19 +263,136 @@ function ScheduleCalendar({ events }) {
         border: 'rgba(15, 15, 15, 0.12)',
         muted: '#f6f5f4',
         mutedForeground: '#68635f',
-        primary: '#0075de',
-        primaryForeground: '#ffffff',
+        primary: '#ffb110',
+        primaryForeground: '#0f0f0f',
         card: '#ffffff',
         cardForeground: '#0f0f0f',
       },
     },
   })
 
+  useEffect(() => {
+    if (activeView !== ViewType.DAY) {
+      setDayHeaderHost(null)
+      return undefined
+    }
+
+    let frameId = window.requestAnimationFrame(() => {
+      setDayHeaderHost(calendarRootRef.current?.querySelector('.df-day-content-header-wrap .df-view-header-container') || null)
+    })
+
+    return () => window.cancelAnimationFrame(frameId)
+  }, [activeView])
+
+  useEffect(() => {
+    const app = calendar.app
+    let frameId = 0
+
+    function syncAgendaTitle() {
+      window.cancelAnimationFrame(frameId)
+      frameId = window.requestAnimationFrame(() => {
+        if (app.state.currentView !== ViewType.AGENDA) return
+
+        const title = calendarRootRef.current?.querySelector('.df-agenda-view .df-view-header-title')
+        if (!title) return
+
+        const start = new Date(app.getCurrentDate())
+        start.setHours(0, 0, 0, 0)
+        const end = new Date(start)
+        end.setDate(end.getDate() + 13)
+        const range = `${start.getMonth() + 1}.${start.getDate()}-${end.getMonth() + 1}.${end.getDate()}`
+        const year = `${end.getFullYear()}年`
+        const titleKey = `${range}|${year}`
+
+        if (title.dataset.scheduleAgendaTitle === titleKey) return
+
+        title.dataset.scheduleAgendaTitle = titleKey
+        title.replaceChildren()
+
+        const rangeNode = document.createElement('span')
+        rangeNode.className = 'schedule-agenda-title-range'
+        rangeNode.textContent = range
+
+        const yearNode = document.createElement('span')
+        yearNode.className = 'schedule-agenda-title-year'
+        yearNode.textContent = year
+
+        title.append(rangeNode, yearNode)
+      })
+    }
+
+    const unsubscribe = app.subscribe(() => {
+      const nextView = app.state.currentView
+      setActiveView((currentView) => currentView === nextView ? currentView : nextView)
+      syncAgendaTitle()
+    })
+
+    syncAgendaTitle()
+    return () => {
+      window.cancelAnimationFrame(frameId)
+      unsubscribe()
+    }
+  }, [calendar.app])
+
+  useEffect(() => {
+    const sourceById = new Map(events.map((event) => [event.id, event]))
+    const updates = calendar.app.getAllEvents()
+      .flatMap((event) => {
+        const source = sourceById.get(event.id)
+        if (!source) return []
+        const title = activeView === ViewType.AGENDA && source.location
+          ? `${source.title}\n${source.location}`
+          : source.title
+        return event.title === title ? [] : [{ id: event.id, updates: { title } }]
+      })
+
+    if (updates.length) calendar.app.applyEventsChanges({ update: updates }, false, 'local')
+  }, [activeView, calendar.app, events])
+
+  const mobileDayNavigation = dayHeaderHost && createPortal(
+    <div className="df-view-header-nav schedule-mobile-day-nav" aria-label="日视图日期导航">
+      <div className="df-navigation">
+        <button
+          className="df-calendar-nav-button"
+          type="button"
+          aria-label="上一天"
+          title="上一天"
+          onClick={() => calendar.app.goToPrevious()}
+        >
+          <Icon name="previous" size={16} />
+        </button>
+        <button
+          className="df-today-button df-calendar-today-button"
+          type="button"
+          onClick={() => calendar.app.goToToday()}
+        >
+          今天
+        </button>
+        <button
+          className="df-calendar-nav-button"
+          type="button"
+          aria-label="下一天"
+          title="下一天"
+          onClick={() => calendar.app.goToNext()}
+        >
+          <Icon name="next" size={16} />
+        </button>
+      </div>
+    </div>,
+    dayHeaderHost,
+  )
+
   return (
-    <DayFlowCalendar
-      calendar={calendar}
-      eventDetailContent={CourseDetail}
-    />
+    <div className="schedule-calendar" ref={calendarRootRef}>
+      <DayFlowCalendar
+        calendar={calendar}
+        eventDetailContent={CourseDetail}
+        mobileEventDetail={MobileCourseDetail}
+        eventContentDay={CourseTimedEventContent}
+        eventContentWeek={CourseTimedEventContent}
+      />
+      {mobileDayNavigation}
+    </div>
   )
 }
 
@@ -187,11 +414,18 @@ function SubscriptionActions({ calendarUrl }) {
 
   return (
     <div className="workspace-actions">
-      <a className="primary-button" href={webcalUrl}>一键订阅</a>
+      <a className="primary-button" href={webcalUrl}>
+        <Icon name="calendar" />
+        一键订阅
+      </a>
       <button className="secondary-button" type="button" onClick={copyUrl}>
+        <Icon name={copied ? 'check' : 'copy'} />
         {copied ? '已复制' : '复制订阅地址'}
       </button>
-      <a className="secondary-button" href={calendarUrl} download="zjut-course-schedule.ics">下载 ICS</a>
+      <a className="secondary-button" href={calendarUrl} download="zjut-course-schedule.ics">
+        <Icon name="download" />
+        下载 ICS
+      </a>
       {copyError && <span className="workspace-actions__error">复制失败</span>}
     </div>
   )
@@ -208,7 +442,7 @@ export default function ScheduleWorkspace({ result, onReset }) {
     async function loadSchedule() {
       try {
         const response = await fetch(`${API_BASE}/api/schedule`, {
-          headers: { Authorization: `Bearer ${result.token}` },
+          credentials: 'include',
           signal: controller.signal,
         })
         const payload = await response.json().catch(() => ({}))
@@ -225,33 +459,17 @@ export default function ScheduleWorkspace({ result, onReset }) {
 
     loadSchedule()
     return () => controller.abort()
-  }, [attempt, result.token])
-
-  const updatedAt = state.data?.updatedAt
-    ? new Intl.DateTimeFormat('zh-CN', {
-      month: 'numeric',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit',
-      hour12: false,
-      timeZone: 'Asia/Shanghai',
-    }).format(new Date(state.data.updatedAt))
-    : ''
+  }, [attempt])
 
   return (
     <div className="workspace">
       <div className="workspace-heading">
         <div className="workspace-heading__copy">
-          <button className="back-button" type="button" onClick={onReset}>返回登录</button>
-          <p className="workspace-kicker">浙工大研究生</p>
+          <button className="back-button" type="button" onClick={onReset}>
+            <Icon name="back" size={18} />
+            返回登录
+          </button>
           <h1>我的课程表</h1>
-          <p className="workspace-subtitle">
-            {state.status === 'ready' && state.data.stale
-              ? '学校系统暂时不可用，当前显示上次成功更新的课程表。'
-              : updatedAt
-                ? `最近更新于 ${updatedAt}`
-                : '正在从学校系统读取课程安排'}
-          </p>
         </div>
         <SubscriptionActions calendarUrl={result.calendarUrl} />
       </div>
@@ -261,7 +479,6 @@ export default function ScheduleWorkspace({ result, onReset }) {
           <div className="schedule-state schedule-state--loading">
             <span className="spinner spinner--blue" aria-hidden="true" />
             <strong>正在加载课程表</strong>
-            <small>会同时整理全部学期的课程安排</small>
           </div>
         )}
         {state.status === 'error' && (
