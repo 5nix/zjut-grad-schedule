@@ -1,6 +1,6 @@
 # ZJUT 研究生课表
 
-[在线使用](https://zjutgs.ironip.ink) · [GitHub](https://github.com/5nix/zjut-grad-schedule)
+[在线使用：https://zjutgs.ironip.ink](https://zjutgs.ironip.ink)
 
 将浙江工业大学研究生教务系统中的课表转换为 ICS 日历订阅，方便同步到系统日历。
 
