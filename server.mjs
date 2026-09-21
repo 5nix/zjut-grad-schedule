@@ -428,6 +428,7 @@ async function handle(request, response) {
       return;
     }
 
+    const loginStartedAt = Date.now();
     const previousCredential = await credentialStore.load(studentId);
     const previousSessionValid = previousCredential?.password === password;
     if (previousSessionValid) {
@@ -441,8 +442,24 @@ async function handle(request, response) {
         json(response, 200, loginPayload(studentId, token), { "set-cookie": sessionCookie(token) });
         return;
       } catch (error) {
-        if (!sessionInvalid(error)) throw error;
         clients.delete(studentId);
+
+        // 学校暂时不可用时，已注册账号可凭本地保存的密码访问已有快照。
+        // 没有快照则继续走原来的失败流程，不伪造登录成功。
+        const snapshot = await calendarStore.load(studentId);
+        if (snapshot) {
+          eventLog.write("login_request", {
+            studentId,
+            state: "snapshot_fallback",
+            durationMs: Date.now() - loginStartedAt,
+          });
+          clearLoginFailures(request, studentId);
+          const token = createSessionToken(studentId);
+          json(response, 200, loginPayload(studentId, token), { "set-cookie": sessionCookie(token) });
+          return;
+        }
+
+        if (!sessionInvalid(error)) throw error;
       }
     }
 
