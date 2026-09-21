@@ -9,10 +9,12 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@dayflow/core": "3.7.3",
+    "@dayflow/react": "3.7.3",
     "@vitejs/plugin-react": "latest",
-    "vite": "latest",
     "react": "latest",
-    "react-dom": "latest"
-  },
-  "devDependencies": {}
+    "react-dom": "latest",
+    "temporal-polyfill": "0.3.0",
+    "vite": "latest"
+  }
 }

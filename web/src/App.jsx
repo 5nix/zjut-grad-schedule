@@ -1,4 +1,6 @@
-import { useId, useMemo, useState } from 'react'
+import { lazy, Suspense, useId, useState } from 'react'
+
+const ScheduleWorkspace = lazy(() => import('./ScheduleWorkspace.jsx'))
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
 const GITHUB_URL = 'https://github.com/5nix/zjut-grad-schedule'
@@ -117,7 +119,11 @@ function LoginForm({ onSuccess }) {
       }
 
       setPassword('')
-      onSuccess({ studentId: payload.studentId || cleanStudentId, calendarUrl: payload.calendarUrl })
+      onSuccess({
+        studentId: payload.studentId || cleanStudentId,
+        token: payload.token,
+        calendarUrl: payload.calendarUrl,
+      })
     } catch {
       setNotice({ type: 'error', title: '无法连接服务', message: '请确认网络正常，或稍后再试。' })
     } finally {
@@ -181,67 +187,11 @@ function LoginForm({ onSuccess }) {
   )
 }
 
-function SuccessPanel({ result, onReset }) {
-  const [copied, setCopied] = useState(false)
-  const [copyError, setCopyError] = useState(false)
-  const calendarUrl = result.calendarUrl
-
-  const webcalUrl = useMemo(() => {
-    try {
-      const url = new URL(calendarUrl, window.location.origin)
-      return url.toString().replace(/^https?:/, 'webcal:')
-    } catch {
-      return calendarUrl.replace(/^https?:/, 'webcal:')
-    }
-  }, [calendarUrl])
-
-  async function copyUrl() {
-    try {
-      await navigator.clipboard.writeText(calendarUrl)
-      setCopied(true)
-      setCopyError(false)
-      window.setTimeout(() => setCopied(false), 1800)
-    } catch {
-      setCopyError(true)
-    }
-  }
-
-  return (
-    <div className="success-panel">
-      <button className="back-button" type="button" onClick={onReset}>
-        <Icon name="back" size={18} />返回
-      </button>
-
-      <div className="success-content">
-        <div className="success-icon"><Icon name="check" size={32} /></div>
-        <h2>订阅已生成</h2>
-
-        <div className="success-actions">
-          <a className="primary-button" href={webcalUrl}>
-            <Icon name="calendar" size={19} />一键订阅
-          </a>
-          <div className="secondary-actions">
-            <button className="secondary-button" type="button" onClick={copyUrl}>
-              <Icon name={copied ? 'check' : 'copy'} size={18} />
-              {copied ? '已复制' : '复制订阅地址'}
-            </button>
-            <a className="secondary-button" href={calendarUrl} download="zjut-course-schedule.ics">
-              <Icon name="download" size={18} />下载 ICS
-            </a>
-          </div>
-        </div>
-
-        {copyError && <p className="copy-error" role="alert">复制失败，请重试。</p>}
-      </div>
-    </div>
-  )
-}
-
 export default function App() {
   const [result, setResult] = useState(null)
 
   return (
-    <div className="site-shell">
+    <div className={`site-shell ${result ? 'site-shell--workspace' : ''}`}>
       <header className="site-header">
         <a className="brand" href="/" aria-label="浙工大研究生课程表订阅首页">
           <BrandMark />
@@ -251,31 +201,33 @@ export default function App() {
         </a>
       </header>
 
-      <main className="hero">
-        <section className="hero-copy" aria-labelledby="page-title">
-          <h1 id="page-title">
-            <span>浙工大研究生</span>
-            <em>课程表订阅</em>
-          </h1>
-        </section>
+      <main className={result ? 'workspace-main' : 'hero'}>
+        {result ? (
+          <Suspense fallback={<div className="workspace-load-fallback"><span className="spinner spinner--blue" aria-hidden="true" />正在打开课程表</div>}>
+            <ScheduleWorkspace result={result} onReset={() => setResult(null)} />
+          </Suspense>
+        ) : (
+          <>
+            <section className="hero-copy" aria-labelledby="page-title">
+              <h1 id="page-title">
+                <span>浙工大研究生</span>
+                <em>课程表订阅</em>
+              </h1>
+            </section>
 
-        <section className={`auth-card ${result ? 'auth-card--success' : ''}`} aria-label={result ? '课程表订阅地址' : '登录'}>
-          <div className="calendar-accent" aria-hidden="true">
-            <i />
-            <i />
-            <span /><span /><span /><span /><span /><span />
-          </div>
-          {result ? (
-            <SuccessPanel result={result} onReset={() => setResult(null)} />
-          ) : (
-            <>
+            <section className="auth-card" aria-label="登录">
+              <div className="calendar-accent" aria-hidden="true">
+                <i />
+                <i />
+                <span /><span /><span /><span /><span /><span />
+              </div>
               <div className="card-heading">
                 <h2>登录浙江工业大学<br />研究生账号</h2>
               </div>
               <LoginForm onSuccess={setResult} />
-            </>
-          )}
-        </section>
+            </section>
+          </>
+        )}
       </main>
 
       {ICP_RECORD && (
