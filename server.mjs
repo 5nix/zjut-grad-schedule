@@ -285,7 +285,9 @@ function schedulePayload(feed) {
 async function getCalendarFeed(studentId) {
   const now = Date.now();
   const cached = calendarCache.get(studentId);
-  if (cached && cached.expiresAt > now) return { feed: cached, state: "cache_hit" };
+  if (cached && cached.expiresAt > now) {
+    return { feed: cached, state: cached.stale ? "stale_fallback" : "cache_hit" };
+  }
 
   const pending = calendarRefreshes.get(studentId);
   if (pending) return pending;
@@ -447,7 +449,13 @@ async function handle(request, response) {
         // 学校暂时不可用时，已注册账号可凭本地保存的密码访问已有快照。
         // 没有快照则继续走原来的失败流程，不伪造登录成功。
         const snapshot = await calendarStore.load(studentId);
-        if (snapshot) {
+        if (snapshot && Array.isArray(snapshot.events)) {
+          const fallback = staleFeed(snapshot, Date.now());
+          if (fallback) {
+            // 让登录后的首个课程表/订阅请求直接使用快照，不等待学校上游超时。
+            fallback.expiresAt = Date.now() + calendarCacheMs;
+            calendarCache.set(studentId, fallback);
+          }
           eventLog.write("login_request", {
             studentId,
             state: "snapshot_fallback",
