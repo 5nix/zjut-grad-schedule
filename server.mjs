@@ -150,6 +150,17 @@ function sessionInvalid(error) {
   return error instanceof HttpError && [401, 403].includes(error.status);
 }
 
+function loginPayload(studentId, token) {
+  const publicBase = (process.env.PUBLIC_BASE_URL ?? `http://127.0.0.1:${port}`).replace(/\/$/, "");
+  const calendarPath = `/calendar.ics?token=${encodeURIComponent(token)}`;
+  return {
+    token,
+    studentId,
+    calendarUrl: `${publicBase}${calendarPath}`,
+    message: "登录成功",
+  };
+}
+
 async function buildCalendar(studentId) {
   let client = await getClient(studentId);
   try {
@@ -351,6 +362,23 @@ async function handle(request, response) {
       return;
     }
 
+    const previousCredential = await credentialStore.load(studentId);
+    const previousSessionValid = previousCredential?.password === password;
+    if (previousSessionValid) {
+      try {
+        const previousClient = await getClient(studentId);
+        await previousClient.fetchSemesters();
+        await persistClientCookies(studentId, previousClient);
+        clearLoginFailures(request, studentId);
+        rememberClient(studentId, previousClient);
+        json(response, 200, loginPayload(studentId, createSessionToken(studentId)));
+        return;
+      } catch (error) {
+        if (!sessionInvalid(error)) throw error;
+        clients.delete(studentId);
+      }
+    }
+
     const client = await withLoginSlot(async () => {
       const nextClient = new ZjutClient();
       try {
@@ -367,19 +395,12 @@ async function handle(request, response) {
       }
       return nextClient;
     });
+    const token = createSessionToken(studentId);
     await credentialStore.saveWithCookies(studentId, password, client.serializeCookies());
 
     clearLoginFailures(request, studentId);
     rememberClient(studentId, client);
-    const token = createSessionToken(studentId);
-    const publicBase = (process.env.PUBLIC_BASE_URL ?? `http://127.0.0.1:${port}`).replace(/\/$/, "");
-    const calendarPath = `/calendar.ics?token=${encodeURIComponent(token)}`;
-    json(response, 200, {
-      token,
-      studentId,
-      calendarUrl: `${publicBase}${calendarPath}`,
-      message: "登录成功",
-    });
+    json(response, 200, loginPayload(studentId, token));
     return;
   }
 
