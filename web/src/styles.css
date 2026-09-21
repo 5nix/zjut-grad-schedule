@@ -11,7 +11,6 @@
   --line: rgba(15, 15, 15, 0.12);
   --blue: #0075de;
   --blue-soft: #e6f3fe;
-  --yellow: #ffb110;
 }
 
 * { box-sizing: border-box; }
@@ -74,7 +73,7 @@ button { cursor: pointer; }
 
 .github-link {
   color: var(--muted);
-  font-size: 12px;
+  font-size: 14px;
   text-decoration: none;
   transition: color 180ms ease;
 }
@@ -128,7 +127,7 @@ button { cursor: pointer; }
   right: -0.08em;
   bottom: 0.02em;
   height: 0.46em;
-  background: var(--yellow);
+  background: var(--blue);
   border-radius: 6px;
 }
 
@@ -381,7 +380,7 @@ button { cursor: pointer; }
   width: min(100%, 1240px);
   margin: 0 auto;
   padding: 0 0 20px;
-  text-align: right;
+  text-align: center;
   font-size: 11px;
 }
 
