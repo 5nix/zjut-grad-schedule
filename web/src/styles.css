@@ -11,6 +11,7 @@
   --line: rgba(15, 15, 15, 0.12);
   --blue: #0075de;
   --blue-soft: #e6f3fe;
+  --yellow: #ffb110;
 }
 
 * { box-sizing: border-box; }
@@ -127,7 +128,7 @@ button { cursor: pointer; }
   right: -0.08em;
   bottom: 0.02em;
   height: 0.46em;
-  background: var(--blue);
+  background: var(--yellow);
   border-radius: 6px;
 }
 
