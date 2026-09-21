@@ -1,6 +1,9 @@
 import { useId, useMemo, useState } from 'react'
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
+const GITHUB_URL = 'https://github.com/5nix/zjut-grad-schedule'
+const ICP_URL = 'https://beian.miit.gov.cn/'
+const ICP_RECORD = (import.meta.env.VITE_ICP_RECORD || '').trim()
 
 function Icon({ name, size = 20 }) {
   const common = {
@@ -243,6 +246,9 @@ export default function App() {
         <a className="brand" href="/" aria-label="浙工大研究生日历订阅首页">
           <BrandMark />
         </a>
+        <a className="github-link" href={GITHUB_URL} target="_blank" rel="noreferrer">
+          GitHub
+        </a>
       </header>
 
       <main className="hero">
@@ -271,6 +277,14 @@ export default function App() {
           )}
         </section>
       </main>
+
+      {ICP_RECORD && (
+        <footer className="site-footer">
+          <a href={ICP_URL} target="_blank" rel="noreferrer">
+            {ICP_RECORD}
+          </a>
+        </footer>
+      )}
 
     </div>
   )

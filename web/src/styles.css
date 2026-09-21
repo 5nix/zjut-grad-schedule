@@ -40,6 +40,7 @@ button { cursor: pointer; }
   margin: 0 auto;
   display: flex;
   align-items: center;
+  justify-content: space-between;
   border-bottom: 1px solid var(--line);
 }
 
@@ -70,6 +71,15 @@ button { cursor: pointer; }
 .brand-mark span:nth-child(1) { height: 10px; }
 .brand-mark span:nth-child(2) { height: 17px; }
 .brand-mark span:nth-child(3) { height: 13px; }
+
+.github-link {
+  color: var(--muted);
+  font-size: 12px;
+  text-decoration: none;
+  transition: color 180ms ease;
+}
+
+.github-link:hover { color: var(--ink); }
 
 .hero {
   width: min(100%, 1240px);
@@ -366,6 +376,22 @@ button { cursor: pointer; }
   color: #9d2a1b;
   font-size: 11px;
 }
+
+.site-footer {
+  width: min(100%, 1240px);
+  margin: 0 auto;
+  padding: 0 0 20px;
+  text-align: right;
+  font-size: 11px;
+}
+
+.site-footer a {
+  color: rgba(0, 0, 0, 0.42);
+  text-decoration: none;
+  transition: color 180ms ease;
+}
+
+.site-footer a:hover { color: var(--muted); }
 
 @media (max-width: 1060px) {
   .hero {
