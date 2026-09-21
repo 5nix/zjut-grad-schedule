@@ -225,7 +225,7 @@ function SuccessPanel({ result, onReset }) {
               <Icon name={copied ? 'check' : 'copy'} size={18} />
               {copied ? '已复制' : '复制订阅地址'}
             </button>
-            <a className="secondary-button" href={calendarUrl} download="calendar.ics">
+            <a className="secondary-button" href={calendarUrl} download="zjut-course-schedule.ics">
               <Icon name="download" size={18} />下载 ICS
             </a>
           </div>
@@ -243,7 +243,7 @@ export default function App() {
   return (
     <div className="site-shell">
       <header className="site-header">
-        <a className="brand" href="/" aria-label="浙工大研究生日历订阅首页">
+        <a className="brand" href="/" aria-label="浙工大研究生课程表订阅首页">
           <BrandMark />
         </a>
         <a className="github-link" href={GITHUB_URL} target="_blank" rel="noreferrer">
@@ -255,11 +255,11 @@ export default function App() {
         <section className="hero-copy" aria-labelledby="page-title">
           <h1 id="page-title">
             <span>浙工大研究生</span>
-            <em>日历订阅</em>
+            <em>课程表订阅</em>
           </h1>
         </section>
 
-        <section className={`auth-card ${result ? 'auth-card--success' : ''}`} aria-label={result ? '订阅地址' : '登录'}>
+        <section className={`auth-card ${result ? 'auth-card--success' : ''}`} aria-label={result ? '课程表订阅地址' : '登录'}>
           <div className="calendar-accent" aria-hidden="true">
             <i />
             <i />
