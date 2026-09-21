@@ -44,6 +44,7 @@ function Icon({ name, size = 20 }) {
     check: <path d="m5 12 4 4L19 6" />,
     copy: <><rect x="8" y="8" width="11" height="11" rx="2" /><path d="M16 8V6a2 2 0 0 0-2-2H6a2 2 0 0 0-2 2v8a2 2 0 0 0 2 2h2" /></>,
     download: <><path d="M12 3v12" /><path d="m7 10 5 5 5-5" /><path d="M5 21h14" /></>,
+    github: <><path d="M15 22v-4c0-1.1-.4-1.8-1-2.2 3.3-.4 6.8-1.6 6.8-7.1 0-1.6-.6-2.9-1.6-3.9.2-.4.7-2-.2-3.8 0 0-1.3-.4-4.1 1.5a14 14 0 0 0-7.5 0C5.6.6 4.3 1 4.3 1c-.9 1.8-.4 3.4-.2 3.8-1 1-1.6 2.3-1.6 3.9 0 5.5 3.5 6.7 6.8 7.1-.4.4-.8 1.1-1 2.2v4" /><path d="M8 20c-3 .9-3-1.5-4.2-1.9" /></>,
     eye: <><path d="M2 12s3.5-6 10-6 10 6 10 6-3.5 6-10 6S2 12 2 12" /><circle cx="12" cy="12" r="2.5" /></>,
     eyeOff: <><path d="m3 3 18 18" /><path d="M10.6 6.2A10.6 10.6 0 0 1 12 6c6.5 0 10 6 10 6a16 16 0 0 1-2.1 2.9" /><path d="M6.2 6.2C3.4 8 2 12 2 12s3.5 6 10 6a9.8 9.8 0 0 0 3.8-.7" /></>,
     alert: <><path d="M12 9v4" /><path d="M12 17h.01" /><path d="M10.3 3.7 2.2 18a2 2 0 0 0 1.7 3h16.2a2 2 0 0 0 1.7-3L13.7 3.7a2 2 0 0 0-3.4 0Z" /></>,
@@ -83,6 +84,16 @@ function Notice({ notice }) {
         <strong>{notice.title}</strong>
         <small>{notice.message}</small>
       </span>
+    </div>
+  )
+}
+
+function BrandMark() {
+  return (
+    <div className="brand-mark" aria-hidden="true">
+      <span />
+      <span />
+      <span />
     </div>
   )
 }
@@ -241,6 +252,18 @@ export default function App() {
 
   return (
     <div className={`site-shell ${result ? 'site-shell--workspace' : ''}`}>
+      {sessionReady && !result && (
+        <header className="site-header">
+          <a className="brand" href="/" aria-label="浙工大研究生课表首页">
+            <BrandMark />
+          </a>
+          <a className="github-link" href={GITHUB_URL} target="_blank" rel="noreferrer">
+            <Icon name="github" size={17} />
+            GitHub
+          </a>
+        </header>
+      )}
+
       <main className={result || !sessionReady ? 'workspace-main' : 'hero'}>
         {!sessionReady ? (
           <div className="workspace-load-fallback">

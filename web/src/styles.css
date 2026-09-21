@@ -34,9 +34,59 @@ button { cursor: pointer; }
   overflow: hidden;
 }
 
+.site-header {
+  width: min(100%, 1240px);
+  height: 80px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  border-bottom: 1px solid var(--line);
+}
+
+.brand {
+  display: inline-flex;
+  color: var(--ink);
+  text-decoration: none;
+}
+
+.brand-mark {
+  width: 36px;
+  height: 36px;
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  align-items: end;
+  gap: 3px;
+  padding: 7px;
+  background: var(--ink);
+  border-radius: 8px;
+}
+
+.brand-mark span {
+  display: block;
+  background: #fff;
+  border-radius: 1px 1px 0 0;
+}
+
+.brand-mark span:nth-child(1) { height: 10px; }
+.brand-mark span:nth-child(2) { height: 17px; }
+.brand-mark span:nth-child(3) { height: 13px; }
+
+.github-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--muted);
+  font-size: 14px;
+  text-decoration: none;
+  transition: color 180ms ease;
+}
+
+.github-link:hover { color: var(--ink); }
+
 .hero {
   width: min(100%, 1240px);
-  min-height: calc(100vh - 44px);
+  min-height: calc(100vh - 80px);
   margin: 0 auto;
   padding: 72px 0 88px;
   display: grid;
@@ -610,6 +660,7 @@ button { cursor: pointer; }
 
 @media (max-width: 760px) {
   .site-shell { padding: 0 22px; }
+  .site-header { height: 72px; }
 
   .site-shell--workspace { padding: 0 16px; }
   .workspace { padding-top: 14px; }
@@ -703,6 +754,8 @@ button { cursor: pointer; }
 
 @media (max-width: 480px) {
   .site-shell { padding: 0 16px; }
+  .site-header { height: 64px; }
+  .brand-mark { width: 32px; height: 32px; }
 
   .workspace h1 { font-size: 31px; }
   .schedule-frame .df-calendar-container { height: calc(100vh - 245px); }
