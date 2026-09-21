@@ -13,6 +13,7 @@ import {
 import { Temporal } from 'temporal-polyfill'
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
+const GITHUB_URL = 'https://github.com/5nix/zjut-grad-schedule'
 
 function Icon({ name, size = 18 }) {
   const common = {
@@ -29,6 +30,9 @@ function Icon({ name, size = 18 }) {
 
   const paths = {
     back: <><path d="m15 18-6-6 6-6" /><path d="M9 12h10" /></>,
+    menu: <><path d="M4 6h16" /><path d="M4 12h16" /><path d="M4 18h16" /></>,
+    logout: <><path d="M10 17l5-5-5-5" /><path d="M15 12H3" /><path d="M21 19V5a2 2 0 0 0-2-2h-4" /><path d="M15 21h4a2 2 0 0 0 2-2" /></>,
+    github: <><path d="M15 22v-4c0-1.1-.4-1.8-1-2.2 3.3-.4 6.8-1.6 6.8-7.1 0-1.6-.6-2.9-1.6-3.9.2-.4.7-2-.2-3.8 0 0-1.3-.4-4.1 1.5a14 14 0 0 0-7.5 0C5.6.6 4.3 1 4.3 1c-.9 1.8-.4 3.4-.2 3.8-1 1-1.6 2.3-1.6 3.9 0 5.5 3.5 6.7 6.8 7.1-.4.4-.8 1.1-1 2.2v4" /><path d="M8 20c-3 .9-3-1.5-4.2-1.9" /></>,
     previous: <path d="m15 18-6-6 6-6" />,
     next: <path d="m9 18 6-6-6-6" />,
     calendar: <><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M16 3v4M8 3v4M3 10h18" /></>,
@@ -431,9 +435,30 @@ function SubscriptionActions({ calendarUrl }) {
   )
 }
 
-export default function ScheduleWorkspace({ result, onReset }) {
+export default function ScheduleWorkspace({ result, onLogout }) {
   const [attempt, setAttempt] = useState(0)
   const [state, setState] = useState({ status: 'loading', data: null, message: '' })
+  const [menuOpen, setMenuOpen] = useState(false)
+  const menuRef = useRef(null)
+
+  useEffect(() => {
+    if (!menuOpen) return undefined
+
+    function closeMenu(event) {
+      if (event.type === 'keydown') {
+        if (event.key === 'Escape') setMenuOpen(false)
+        return
+      }
+      if (!menuRef.current?.contains(event.target)) setMenuOpen(false)
+    }
+
+    document.addEventListener('pointerdown', closeMenu)
+    document.addEventListener('keydown', closeMenu)
+    return () => {
+      document.removeEventListener('pointerdown', closeMenu)
+      document.removeEventListener('keydown', closeMenu)
+    }
+  }, [menuOpen])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -465,14 +490,49 @@ export default function ScheduleWorkspace({ result, onReset }) {
     <div className="workspace">
       <div className="workspace-heading">
         <div className="workspace-heading__copy">
-          <button className="back-button" type="button" onClick={onReset}>
-            <Icon name="back" size={18} />
-            返回登录
-          </button>
           <h1>我的课程表</h1>
         </div>
-        <SubscriptionActions calendarUrl={result.calendarUrl} />
+        <div className="workspace-menu" ref={menuRef}>
+          <button
+            className="workspace-menu__trigger"
+            type="button"
+            aria-label="打开菜单"
+            aria-haspopup="menu"
+            aria-expanded={menuOpen}
+            onClick={() => setMenuOpen((value) => !value)}
+          >
+            <Icon name="menu" size={20} />
+          </button>
+          {menuOpen && (
+            <div className="workspace-menu__popover" role="menu">
+              <a
+                className="workspace-menu__item"
+                href={GITHUB_URL}
+                target="_blank"
+                rel="noreferrer"
+                role="menuitem"
+                onClick={() => setMenuOpen(false)}
+              >
+                <Icon name="github" size={18} />
+                GitHub
+              </a>
+              <button
+                className="workspace-menu__item"
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setMenuOpen(false)
+                  onLogout()
+                }}
+              >
+                <Icon name="logout" size={18} />
+                退出登录
+              </button>
+            </div>
+          )}
+        </div>
       </div>
+      <SubscriptionActions calendarUrl={result.calendarUrl} />
 
       <section className="schedule-frame" aria-label="课程表">
         {state.status === 'loading' && (

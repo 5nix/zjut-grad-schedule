@@ -1,7 +1,7 @@
 {
   "id": "/",
   "name": "浙工大研究生课表",
-  "short_name": "浙工大课表",
+  "short_name": "浙工大研究生课表",
   "description": "浙江工业大学研究生课程表查看与 ICS 订阅",
   "start_url": "/",
   "scope": "/",

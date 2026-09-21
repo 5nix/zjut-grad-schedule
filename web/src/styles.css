@@ -34,56 +34,9 @@ button { cursor: pointer; }
   overflow: hidden;
 }
 
-.site-header {
-  width: min(100%, 1240px);
-  height: 80px;
-  margin: 0 auto;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  border-bottom: 1px solid var(--line);
-}
-
-.brand {
-  display: inline-flex;
-  color: var(--ink);
-  text-decoration: none;
-}
-
-.brand-mark {
-  width: 36px;
-  height: 36px;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  align-items: end;
-  gap: 3px;
-  padding: 7px;
-  background: var(--ink);
-  border-radius: 8px;
-}
-
-.brand-mark span {
-  display: block;
-  background: #fff;
-  border-radius: 1px 1px 0 0;
-}
-
-.brand-mark span:nth-child(1) { height: 10px; }
-.brand-mark span:nth-child(2) { height: 17px; }
-.brand-mark span:nth-child(3) { height: 13px; }
-
-.github-link {
-  color: var(--muted);
-  font-size: 14px;
-  text-decoration: none;
-  transition: color 180ms ease;
-}
-
-.github-link:hover { color: var(--ink); }
-
 .hero {
   width: min(100%, 1240px);
-  min-height: calc(100vh - 80px);
+  min-height: calc(100vh - 44px);
   margin: 0 auto;
   padding: 72px 0 88px;
   display: grid;
@@ -329,19 +282,14 @@ button { cursor: pointer; }
   padding-right: 24px;
 }
 
-.site-shell--workspace .site-header {
-  width: min(100%, 1440px);
-  height: 64px;
-}
-
 .workspace-main {
   width: min(100%, 1440px);
-  min-height: calc(100vh - 64px);
+  min-height: 100vh;
   margin: 0 auto;
 }
 
 .workspace-load-fallback {
-  min-height: calc(100vh - 64px);
+  min-height: 100vh;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -351,24 +299,20 @@ button { cursor: pointer; }
 }
 
 .workspace {
+  position: relative;
   padding: 20px 0 34px;
 }
 
 .workspace-heading {
   display: flex;
-  align-items: flex-end;
+  align-items: center;
   justify-content: space-between;
   gap: 28px;
-  padding: 0 0 16px;
-  border-bottom: 1px solid var(--line);
+  padding: 0;
 }
 
 .workspace-heading__copy {
   min-width: 0;
-}
-
-.workspace-heading .back-button {
-  margin: 0 0 8px -12px;
 }
 
 .workspace h1 {
@@ -382,6 +326,9 @@ button { cursor: pointer; }
 
 .workspace-actions {
   flex: 0 0 auto;
+  position: absolute;
+  top: 20px;
+  right: 56px;
   display: flex;
   align-items: center;
   justify-content: flex-end;
@@ -403,6 +350,62 @@ button { cursor: pointer; }
 .workspace-actions__error {
   color: #9d2a1b;
   font-size: 11px;
+}
+
+.workspace-menu {
+  position: relative;
+  flex: 0 0 auto;
+}
+
+.workspace-menu__trigger {
+  width: 42px;
+  height: 42px;
+  display: grid;
+  place-items: center;
+  color: var(--ink);
+  background: transparent;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+}
+
+.workspace-menu__trigger:hover,
+.workspace-menu__trigger[aria-expanded="true"] {
+  background: var(--paper);
+}
+
+.workspace-menu__popover {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 8px);
+  right: 0;
+  min-width: 148px;
+  padding: 4px;
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 9px;
+  box-shadow: 0 12px 30px rgba(15, 15, 15, 0.12);
+}
+
+.workspace-menu__item {
+  width: 100%;
+  min-height: 38px;
+  padding: 0 10px;
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  color: var(--ink);
+  background: transparent;
+  border: 0;
+  border-radius: 6px;
+  font-size: 13px;
+  text-align: left;
+  text-decoration: none;
+}
+
+.workspace-menu__item:hover,
+.workspace-menu__item:focus-visible {
+  background: var(--paper);
+  outline: none;
 }
 
 .schedule-frame {
@@ -578,6 +581,11 @@ button { cursor: pointer; }
   width: min(100%, 1240px);
   margin: 0 auto;
   padding: 0 0 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  gap: 10px;
   text-align: center;
   font-size: 11px;
 }
@@ -602,21 +610,19 @@ button { cursor: pointer; }
 
 @media (max-width: 760px) {
   .site-shell { padding: 0 22px; }
-  .site-header { height: 72px; }
 
   .site-shell--workspace { padding: 0 16px; }
-  .site-shell--workspace .site-header { height: 56px; }
   .workspace { padding-top: 14px; }
   .workspace-heading {
-    align-items: stretch;
-    flex-direction: column;
+    align-items: center;
+    flex-direction: row;
     gap: 14px;
-    padding-bottom: 14px;
   }
-  .workspace-heading .back-button { margin-left: -12px; }
   .workspace h1 { font-size: 34px; }
   .workspace-actions {
+    position: static;
     width: 100%;
+    margin-top: 12px;
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
@@ -697,10 +703,7 @@ button { cursor: pointer; }
 
 @media (max-width: 480px) {
   .site-shell { padding: 0 16px; }
-  .site-header { height: 64px; }
-  .brand-mark { width: 32px; height: 32px; }
 
-  .site-shell--workspace .site-header { height: 52px; }
   .workspace h1 { font-size: 31px; }
   .schedule-frame .df-calendar-container { height: calc(100vh - 245px); }
 

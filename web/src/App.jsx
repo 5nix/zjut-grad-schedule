@@ -6,6 +6,24 @@ const API_BASE = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
 const GITHUB_URL = 'https://github.com/5nix/zjut-grad-schedule'
 const ICP_URL = 'https://beian.miit.gov.cn/'
 const ICP_RECORD = (import.meta.env.VITE_ICP_RECORD || '').trim()
+const LOCAL_LOGOUT_KEY = 'zjut_local_logout'
+
+function hasLocalLogout() {
+  try {
+    return window.localStorage.getItem(LOCAL_LOGOUT_KEY) === '1'
+  } catch {
+    return false
+  }
+}
+
+function setLocalLogout(value) {
+  try {
+    if (value) window.localStorage.setItem(LOCAL_LOGOUT_KEY, '1')
+    else window.localStorage.removeItem(LOCAL_LOGOUT_KEY)
+  } catch {
+    // 隐私模式下无法使用 localStorage 时仍保持当前页面的退出状态。
+  }
+}
 
 function Icon({ name, size = 20 }) {
   const common = {
@@ -54,16 +72,6 @@ function getErrorState(response, payload) {
     default:
       return { type: 'error', title: '暂时无法登录', message: message || '请检查网络连接后重试。' }
   }
-}
-
-function BrandMark() {
-  return (
-    <div className="brand-mark" aria-hidden="true">
-      <span />
-      <span />
-      <span />
-    </div>
-  )
 }
 
 function Notice({ notice }) {
@@ -120,6 +128,7 @@ function LoginForm({ onSuccess }) {
       }
 
       setPassword('')
+      setLocalLogout(false)
       onSuccess({
         studentId: payload.studentId || cleanStudentId,
         calendarUrl: payload.calendarUrl,
@@ -192,9 +201,18 @@ export default function App() {
   const [sessionReady, setSessionReady] = useState(false)
 
   useEffect(() => {
+    document.title = '浙工大研究生课表'
+  }, [])
+
+  useEffect(() => {
     const controller = new AbortController()
 
     async function restoreSession() {
+      if (hasLocalLogout()) {
+        setSessionReady(true)
+        return
+      }
+
       try {
         const response = await fetch(`${API_BASE}/api/session`, {
           credentials: 'include',
@@ -215,17 +233,14 @@ export default function App() {
     return () => controller.abort()
   }, [])
 
+  function handleLocalLogout() {
+    setLocalLogout(true)
+    setResult(null)
+    setSessionReady(true)
+  }
+
   return (
     <div className={`site-shell ${result ? 'site-shell--workspace' : ''}`}>
-      <header className="site-header">
-        <a className="brand" href="/" aria-label="浙工大研究生课程表订阅首页">
-          <BrandMark />
-        </a>
-        <a className="github-link" href={GITHUB_URL} target="_blank" rel="noreferrer">
-          GitHub
-        </a>
-      </header>
-
       <main className={result || !sessionReady ? 'workspace-main' : 'hero'}>
         {!sessionReady ? (
           <div className="workspace-load-fallback">
@@ -234,14 +249,14 @@ export default function App() {
           </div>
         ) : result ? (
           <Suspense fallback={<div className="workspace-load-fallback"><span className="spinner spinner--blue" aria-hidden="true" />正在打开课程表</div>}>
-            <ScheduleWorkspace result={result} onReset={() => setResult(null)} />
+            <ScheduleWorkspace result={result} onLogout={handleLocalLogout} />
           </Suspense>
         ) : (
           <>
             <section className="hero-copy" aria-labelledby="page-title">
               <h1 id="page-title">
                 <span>浙工大研究生</span>
-                <em>课程表订阅</em>
+                <em>课表</em>
               </h1>
             </section>
 
