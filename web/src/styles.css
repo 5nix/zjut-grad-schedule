@@ -662,8 +662,27 @@ button { cursor: pointer; }
   .site-shell { padding: 0 22px; }
   .site-header { height: 72px; }
 
-  .site-shell--workspace { padding: 0 16px; }
-  .workspace { padding-top: 14px; }
+  .site-shell--workspace {
+    height: 100dvh;
+    min-height: 100dvh;
+    padding: 0 16px;
+    display: flex;
+    flex-direction: column;
+  }
+  .workspace-main {
+    min-height: 0;
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+  }
+  .workspace {
+    min-height: 0;
+    flex: 1 1 auto;
+    padding-top: 14px;
+    padding-bottom: 16px;
+    display: flex;
+    flex-direction: column;
+  }
   .workspace-heading {
     align-items: center;
     flex-direction: row;
@@ -682,11 +701,33 @@ button { cursor: pointer; }
   .schedule-frame {
     min-height: 0;
     margin-top: 14px;
+    display: flex;
+    flex: 1 1 auto;
+    flex-direction: column;
+  }
+  .schedule-frame .schedule-calendar {
+    min-height: 0;
+    height: 100%;
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
+  }
+  .schedule-frame .df-calendar-wrapper {
+    min-height: 0;
+    height: 100%;
+    flex: 1 1 auto;
+    display: flex;
+    flex-direction: column;
   }
   .schedule-frame .df-calendar-container {
     min-height: 0;
-    height: calc(100vh - 235px);
-    height: calc(100dvh - 235px);
+    height: auto;
+    flex: 1 1 0%;
+  }
+  .schedule-frame > .schedule-state {
+    min-height: 0;
+    height: auto;
+    flex: 1 1 auto;
   }
   .schedule-frame .df-mobile-event-drawer-panel {
     height: auto;
@@ -708,10 +749,9 @@ button { cursor: pointer; }
   .schedule-frame .df-day-content-header-wrap .df-view-header-container {
     align-items: flex-start;
   }
-  .schedule-state {
-    min-height: 0;
-    height: calc(100vh - 235px);
-    height: calc(100dvh - 235px);
+  .site-shell--workspace .site-footer {
+    flex: 0 0 auto;
+    padding-bottom: max(16px, env(safe-area-inset-bottom, 0px));
   }
 
   /* DayFlow 的中文 narrow weekday 会全部变成“周”，手机端改回完整星期名。 */
@@ -766,11 +806,6 @@ button { cursor: pointer; }
   .brand-mark { width: 32px; height: 32px; }
 
   .workspace h1 { font-size: 31px; }
-  .schedule-frame .df-calendar-container,
-  .schedule-state {
-    height: calc(100vh - 245px);
-    height: calc(100dvh - 245px);
-  }
 
   .hero {
     padding: 42px 0 52px;
