@@ -441,6 +441,45 @@ function ScheduleCalendar({ events, themeDark }) {
     }
   }, [])
 
+  useEffect(() => {
+    let activePanel = null
+    let panelResizeObserver = null
+    let repositionFrame = 0
+
+    function requestPanelReposition() {
+      window.cancelAnimationFrame(repositionFrame)
+      repositionFrame = window.requestAnimationFrame(() => {
+        const panel = document.querySelector('[data-event-detail-panel]')
+        if (panel && panel === activePanel && !panel.classList.contains('is-closing')) {
+          window.dispatchEvent(new Event('resize'))
+        }
+      })
+    }
+
+    function observeDetailPanel() {
+      const panel = document.querySelector('[data-event-detail-panel]')
+      if (panel === activePanel) return
+
+      panelResizeObserver?.disconnect()
+      activePanel = panel
+      if (!panel) return
+
+      panelResizeObserver = new ResizeObserver(requestPanelReposition)
+      panelResizeObserver.observe(panel)
+      requestPanelReposition()
+    }
+
+    const mutationObserver = new MutationObserver(observeDetailPanel)
+    mutationObserver.observe(document.body, { childList: true, subtree: true })
+    observeDetailPanel()
+
+    return () => {
+      mutationObserver.disconnect()
+      panelResizeObserver?.disconnect()
+      window.cancelAnimationFrame(repositionFrame)
+    }
+  }, [])
+
   function handleSearchResultClick({ defaultAction, source }) {
     if (source !== 'mobile') {
       defaultAction()

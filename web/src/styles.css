@@ -66,11 +66,21 @@
 }
 
 @keyframes detail-panel-reveal {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes detail-panel-exit {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes detail-panel-content-reveal {
   from { opacity: 0; transform: translateY(4px) scale(0.98); }
   to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
-@keyframes detail-panel-exit {
+@keyframes detail-panel-content-exit {
   from { opacity: 1; transform: translateY(0) scale(1); }
   to { opacity: 0; transform: translateY(4px) scale(0.98); }
 }
@@ -647,7 +657,6 @@ button { cursor: pointer; }
 .df-event-detail-panel {
   background-color: var(--white) !important;
   border-color: var(--line) !important;
-  transform-origin: left center;
   animation: detail-panel-reveal var(--motion-surface-duration) var(--motion-ease) both;
 }
 
@@ -656,9 +665,18 @@ button { cursor: pointer; }
   border-color: var(--line) !important;
 }
 
+.df-event-detail-panel > .df-content-slot {
+  transform-origin: left center;
+  animation: detail-panel-content-reveal var(--motion-surface-duration) var(--motion-ease) both;
+}
+
 .df-event-detail-panel.is-closing {
   pointer-events: none !important;
   animation: detail-panel-exit var(--motion-surface-duration) var(--motion-ease) both;
+}
+
+.df-event-detail-panel.is-closing > .df-content-slot {
+  animation: detail-panel-content-exit var(--motion-surface-duration) var(--motion-ease) both;
 }
 
 .about-dialog__heading {
