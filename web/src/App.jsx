@@ -216,6 +216,20 @@ export default function App() {
   }, [])
 
   useEffect(() => {
+    const root = document.documentElement
+    const body = document.body
+    const className = 'workspace-scroll-lock'
+
+    root.classList.toggle(className, Boolean(result))
+    body.classList.toggle(className, Boolean(result))
+
+    return () => {
+      root.classList.remove(className)
+      body.classList.remove(className)
+    }
+  }, [result])
+
+  useEffect(() => {
     const controller = new AbortController()
 
     async function restoreSession() {
