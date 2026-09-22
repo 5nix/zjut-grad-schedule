@@ -658,11 +658,14 @@ export default function ScheduleWorkspace({ result, onLogout, themeDark, onToggl
   const [subscriptionClosing, setSubscriptionClosing] = useState(false)
   const [aboutOpen, setAboutOpen] = useState(false)
   const [aboutClosing, setAboutClosing] = useState(false)
+  const [logoutConfirmOpen, setLogoutConfirmOpen] = useState(false)
+  const [logoutConfirmClosing, setLogoutConfirmClosing] = useState(false)
   const [menuClosing, setMenuClosing] = useState(false)
   const menuRef = useRef(null)
   const menuCloseTimerRef = useRef(null)
   const subscriptionCloseTimerRef = useRef(null)
   const aboutCloseTimerRef = useRef(null)
+  const logoutConfirmCloseTimerRef = useRef(null)
 
   function reloadSchedule(forceRefresh = false) {
     setLoadRequest(({ id }) => ({ id: id + 1, forceRefresh }))
@@ -729,6 +732,33 @@ export default function ScheduleWorkspace({ result, onLogout, themeDark, onToggl
     }, MENU_CLOSE_MS)
   }
 
+  function openLogoutConfirm() {
+    window.clearTimeout(logoutConfirmCloseTimerRef.current)
+    setLogoutConfirmClosing(false)
+    setLogoutConfirmOpen(true)
+  }
+
+  function closeLogoutConfirm() {
+    if (!logoutConfirmOpen || logoutConfirmClosing) return
+
+    setLogoutConfirmClosing(true)
+    logoutConfirmCloseTimerRef.current = window.setTimeout(() => {
+      setLogoutConfirmOpen(false)
+      setLogoutConfirmClosing(false)
+    }, MENU_CLOSE_MS)
+  }
+
+  function confirmLogout() {
+    if (!logoutConfirmOpen || logoutConfirmClosing) return
+
+    setLogoutConfirmClosing(true)
+    logoutConfirmCloseTimerRef.current = window.setTimeout(() => {
+      setLogoutConfirmOpen(false)
+      setLogoutConfirmClosing(false)
+      onLogout()
+    }, MENU_CLOSE_MS)
+  }
+
   useEffect(() => {
     if (!menuOpen) return undefined
 
@@ -759,10 +789,22 @@ export default function ScheduleWorkspace({ result, onLogout, themeDark, onToggl
     return () => document.removeEventListener('keydown', handleDocumentAboutClose)
   }, [aboutOpen, aboutClosing])
 
+  useEffect(() => {
+    if (!logoutConfirmOpen) return undefined
+
+    function handleDocumentLogoutConfirmClose(event) {
+      if (event.key === 'Escape') closeLogoutConfirm()
+    }
+
+    document.addEventListener('keydown', handleDocumentLogoutConfirmClose)
+    return () => document.removeEventListener('keydown', handleDocumentLogoutConfirmClose)
+  }, [logoutConfirmOpen, logoutConfirmClosing])
+
   useEffect(() => () => {
     window.clearTimeout(menuCloseTimerRef.current)
     window.clearTimeout(subscriptionCloseTimerRef.current)
     window.clearTimeout(aboutCloseTimerRef.current)
+    window.clearTimeout(logoutConfirmCloseTimerRef.current)
   }, [])
 
   useEffect(() => {
@@ -874,7 +916,7 @@ export default function ScheduleWorkspace({ result, onLogout, themeDark, onToggl
                 role="menuitem"
                 onClick={() => {
                   closeMenu()
-                  window.setTimeout(onLogout, MENU_CLOSE_MS)
+                  window.setTimeout(openLogoutConfirm, MENU_CLOSE_MS)
                 }}
               >
                 <Icon name="logout" size={18} />
@@ -919,7 +961,7 @@ export default function ScheduleWorkspace({ result, onLogout, themeDark, onToggl
         )}
       </section>
 
-      {aboutOpen && (
+      {aboutOpen && createPortal(
         <div
           className={`about-dialog${aboutClosing ? ' is-closing' : ''}`}
           role="presentation"
@@ -951,7 +993,50 @@ export default function ScheduleWorkspace({ result, onLogout, themeDark, onToggl
               <p>© 2026 Zihan S.</p>
             </div>
           </section>
-        </div>
+        </div>,
+        document.body,
+      )}
+
+      {logoutConfirmOpen && createPortal(
+        <div
+          className={`about-dialog logout-dialog${logoutConfirmClosing ? ' is-closing' : ''}`}
+          role="presentation"
+          onClick={closeLogoutConfirm}
+        >
+          <section
+            className="about-dialog__panel logout-dialog__panel"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="logout-dialog-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="about-dialog__heading">
+              <h2 id="logout-dialog-title">退出登录</h2>
+              <button
+                className="about-dialog__close"
+                type="button"
+                aria-label="取消退出登录"
+                onClick={closeLogoutConfirm}
+              >
+                <Icon name="close" size={18} />
+              </button>
+            </div>
+            <div className="about-dialog__body">
+              <p>确定要退出当前浏览器吗？</p>
+              <p>退出只会清除本地登录状态，不会影响服务端记录和订阅链接。</p>
+            </div>
+            <div className="logout-dialog__actions">
+              <button className="logout-dialog__cancel" type="button" onClick={closeLogoutConfirm}>
+                取消
+              </button>
+              <button className="logout-dialog__confirm" type="button" onClick={confirmLogout}>
+                <Icon name="logout" size={17} />
+                退出登录
+              </button>
+            </div>
+          </section>
+        </div>,
+        document.body,
       )}
     </div>
   )

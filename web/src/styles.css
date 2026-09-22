@@ -627,6 +627,9 @@ button { cursor: pointer; }
   position: fixed;
   z-index: 40;
   inset: 0;
+  width: 100%;
+  min-height: 100vh;
+  min-height: 100dvh;
   padding: 24px;
   display: grid;
   place-items: center;
@@ -732,6 +735,55 @@ button { cursor: pointer; }
 }
 
 .about-dialog__body a:hover { text-decoration: underline; }
+
+.logout-dialog__actions {
+  margin-top: 20px;
+  display: flex;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.logout-dialog__actions button {
+  min-height: 36px;
+  padding: 0 13px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 650;
+  transition: transform var(--motion-quick-duration) var(--motion-ease), background-color var(--motion-quick-duration) ease, border-color var(--motion-quick-duration) ease;
+}
+
+.logout-dialog__cancel {
+  color: var(--ink);
+  background: transparent;
+  border: 1px solid var(--line);
+}
+
+.logout-dialog__cancel:hover,
+.logout-dialog__cancel:focus-visible {
+  background: var(--paper);
+  outline: none;
+}
+
+.logout-dialog__confirm {
+  color: #fff;
+  background: #c7342b;
+  border: 1px solid #c7342b;
+}
+
+.logout-dialog__confirm:hover,
+.logout-dialog__confirm:focus-visible {
+  background: #b52d25;
+  border-color: #b52d25;
+  outline: none;
+}
+
+.logout-dialog__actions button:active {
+  transform: scale(0.98);
+}
 
 .schedule-frame {
   min-height: 0;
