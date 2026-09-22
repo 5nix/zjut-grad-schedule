@@ -413,7 +413,7 @@ button { cursor: pointer; }
 .workspace h1 {
   margin: 0;
   color: var(--ink);
-  font-size: clamp(28px, 2.6vw, 40px);
+  font-size: clamp(27px, 2.5vw, 38px);
   font-weight: 680;
   line-height: 1;
   letter-spacing: -0.055em;
@@ -460,6 +460,7 @@ button { cursor: pointer; }
 .workspace-menu {
   position: relative;
   flex: 0 0 auto;
+  margin-right: 8px;
 }
 
 .workspace-menu__trigger {
@@ -950,7 +951,8 @@ button { cursor: pointer; }
     flex-direction: row;
     gap: 14px;
   }
-  .workspace h1 { font-size: 30px; }
+  .workspace h1 { font-size: 29px; }
+  .workspace-menu { margin-right: -8px; }
   .workspace-actions {
     position: static;
     width: 100%;
@@ -1085,7 +1087,7 @@ button { cursor: pointer; }
   .site-header { height: 64px; }
   .brand-mark { width: 32px; height: 32px; }
 
-  .workspace h1 { font-size: 31px; }
+  .workspace h1 { font-size: 28px; }
 
   .hero {
     padding: 42px 0 52px;
