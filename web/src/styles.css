@@ -681,6 +681,24 @@ button { cursor: pointer; }
   background-color: var(--schedule-event-line) !important;
 }
 
+:root[data-theme='dark'] .schedule-frame .df-view-switcher {
+  background-color: #1f2937 !important;
+}
+
+:root[data-theme='dark'] .schedule-frame .df-view-switcher-btn {
+  color: #9ca3af !important;
+}
+
+:root[data-theme='dark'] .schedule-frame .df-view-switcher-btn:hover {
+  color: #f3f4f6 !important;
+  background-color: #374151 !important;
+}
+
+:root[data-theme='dark'] .schedule-frame .df-view-switcher-btn[data-active='true'] {
+  color: #f3f4f6 !important;
+  background-color: #374151 !important;
+}
+
 .schedule-frame .df-header {
   border-bottom-color: var(--line);
 }
