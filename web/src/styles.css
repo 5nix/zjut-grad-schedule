@@ -85,6 +85,16 @@
   to { opacity: 0; transform: translateY(4px) scale(0.98); }
 }
 
+@keyframes tablet-detail-reveal {
+  from { opacity: 0; transform: translateX(8px) scale(0.98); }
+  to { opacity: 1; transform: translateX(0) scale(1); }
+}
+
+@keyframes tablet-detail-exit {
+  from { opacity: 1; transform: translateX(0) scale(1); }
+  to { opacity: 0; transform: translateX(8px) scale(0.98); }
+}
+
 @keyframes surface-exit {
   from { opacity: 1; transform: translateY(0) scale(1); }
   to { opacity: 0; transform: translateY(-2px) scale(0.99); }
@@ -680,6 +690,65 @@ button { cursor: pointer; }
 
 .df-event-detail-panel.is-closing > .df-content-slot {
   animation: detail-panel-content-exit var(--motion-surface-duration) var(--motion-ease) both;
+}
+
+.schedule-tablet-event-detail {
+  position: fixed;
+  z-index: 9999;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  padding: 24px;
+  background: transparent;
+}
+
+.schedule-tablet-event-detail.is-closing {
+  pointer-events: none;
+}
+
+.schedule-tablet-event-detail__panel {
+  position: relative;
+  width: min(360px, 100%);
+  max-height: min(70vh, 520px);
+  overflow: auto;
+  padding: 22px 24px 24px;
+  color: var(--ink);
+  background: var(--white);
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  box-shadow: 0 16px 40px rgba(15, 15, 15, 0.14);
+  animation: tablet-detail-reveal var(--motion-surface-duration) var(--motion-ease) both;
+}
+
+.schedule-tablet-event-detail.is-closing .schedule-tablet-event-detail__panel {
+  animation: tablet-detail-exit var(--motion-surface-duration) var(--motion-ease) both;
+}
+
+.schedule-tablet-event-detail__close {
+  position: absolute;
+  z-index: 1;
+  top: 10px;
+  right: 10px;
+  width: 30px;
+  height: 30px;
+  display: grid;
+  place-items: center;
+  color: var(--muted);
+  background: transparent;
+  border: 0;
+  border-radius: 7px;
+}
+
+.schedule-tablet-event-detail__close:hover,
+.schedule-tablet-event-detail__close:focus-visible {
+  color: var(--ink);
+  background: var(--paper);
+  outline: none;
+}
+
+:root[data-theme='dark'] .schedule-tablet-event-detail__panel {
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.34);
 }
 
 .about-dialog__heading {

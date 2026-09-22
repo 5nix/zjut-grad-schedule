@@ -208,14 +208,25 @@ function CourseTimedEventContent({ event }) {
   )
 }
 
-function MobileCourseDetail({ isOpen, draftEvent, onClose }) {
-  return <MobileCourseDetailRenderer isOpen={isOpen} draftEvent={draftEvent} onClose={onClose} />
+// DayFlow uses this slot name for its mobile path; the presentation here is selected only by viewport width.
+function getDetailSurface() {
+  if (typeof window === 'undefined') return 'mobile'
+  if (window.innerWidth > 1024) return 'desktop'
+  if (window.innerWidth > 760) return 'tablet'
+  return 'mobile'
 }
 
-function MobileCourseDetailRenderer({ isOpen, draftEvent, onClose }) {
+function MobileCourseDetail({ isOpen, draftEvent, onClose }) {
+  const surface = getDetailSurface()
+  if (surface === 'desktop') return null
+  return <MobileCourseDetailRenderer surface={surface} isOpen={isOpen} draftEvent={draftEvent} onClose={onClose} />
+}
+
+function MobileCourseDetailRenderer({ surface, isOpen, draftEvent, onClose }) {
   const [visibleEvent, setVisibleEvent] = useState(() => (isOpen && draftEvent ? draftEvent : null))
   const [isClosing, setIsClosing] = useState(false)
   const closeTimerRef = useRef(null)
+  const closeDuration = surface === 'tablet' ? DETAIL_CLOSE_MS : DRAWER_CLOSE_MS
 
   useEffect(() => {
     window.clearTimeout(closeTimerRef.current)
@@ -232,14 +243,38 @@ function MobileCourseDetailRenderer({ isOpen, draftEvent, onClose }) {
     closeTimerRef.current = window.setTimeout(() => {
       setVisibleEvent(null)
       setIsClosing(false)
-    }, DRAWER_CLOSE_MS)
+    }, closeDuration)
 
     return () => window.clearTimeout(closeTimerRef.current)
-  }, [isOpen, draftEvent, visibleEvent])
+  }, [isOpen, draftEvent, visibleEvent, closeDuration])
 
   useEffect(() => () => window.clearTimeout(closeTimerRef.current), [])
 
   if (!visibleEvent) return null
+
+  if (surface === 'tablet') {
+    return (
+      <div
+        className={`df-portal schedule-tablet-event-detail${isClosing ? ' is-closing' : ''}`}
+        onClick={(event) => {
+          if (event.target === event.currentTarget) onClose()
+        }}
+      >
+        <div className="schedule-tablet-event-detail__panel" role="dialog" aria-label="课程详情">
+          <button
+            className="schedule-tablet-event-detail__close"
+            type="button"
+            aria-label="关闭课程详情"
+            title="关闭"
+            onClick={onClose}
+          >
+            <Icon name="close" size={18} />
+          </button>
+          <CourseDetail event={visibleEvent} />
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className={`df-portal df-mobile-event-drawer${isClosing ? ' is-closing' : ''}`}>
