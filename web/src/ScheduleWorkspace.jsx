@@ -15,6 +15,11 @@ import { Temporal } from 'temporal-polyfill'
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
 const GITHUB_URL = 'https://github.com/5nix/zjut-grad-schedule'
 const SUBSCRIPTION_VISIBILITY_COOKIE = 'zjut_subscription_visible'
+const MENU_CLOSE_MS = 150
+const SURFACE_CLOSE_MS = 220
+const DRAWER_CLOSE_MS = 300
+const SEARCH_CLOSE_MS = 220
+const DETAIL_CLOSE_MS = 220
 
 function readCookie(name) {
   const prefix = `${encodeURIComponent(name)}=`
@@ -204,10 +209,40 @@ function CourseTimedEventContent({ event }) {
 }
 
 function MobileCourseDetail({ isOpen, draftEvent, onClose }) {
-  if (!isOpen || !draftEvent) return null
+  return <MobileCourseDetailRenderer isOpen={isOpen} draftEvent={draftEvent} onClose={onClose} />
+}
+
+function MobileCourseDetailRenderer({ isOpen, draftEvent, onClose }) {
+  const [visibleEvent, setVisibleEvent] = useState(() => (isOpen && draftEvent ? draftEvent : null))
+  const [isClosing, setIsClosing] = useState(false)
+  const closeTimerRef = useRef(null)
+
+  useEffect(() => {
+    window.clearTimeout(closeTimerRef.current)
+
+    if (isOpen && draftEvent) {
+      setVisibleEvent(draftEvent)
+      setIsClosing(false)
+      return undefined
+    }
+
+    if (!visibleEvent) return undefined
+
+    setIsClosing(true)
+    closeTimerRef.current = window.setTimeout(() => {
+      setVisibleEvent(null)
+      setIsClosing(false)
+    }, DRAWER_CLOSE_MS)
+
+    return () => window.clearTimeout(closeTimerRef.current)
+  }, [isOpen, draftEvent, visibleEvent])
+
+  useEffect(() => () => window.clearTimeout(closeTimerRef.current), [])
+
+  if (!visibleEvent) return null
 
   return (
-    <div className="df-portal df-mobile-event-drawer">
+    <div className={`df-portal df-mobile-event-drawer${isClosing ? ' is-closing' : ''}`}>
       <div className="df-mobile-event-drawer-backdrop" onClick={onClose} />
       <div className="df-mobile-event-drawer-panel df-animate-slide-up" onClick={(event) => event.stopPropagation()}>
         <div className="df-mobile-event-drawer-header">
@@ -218,7 +253,7 @@ function MobileCourseDetail({ isOpen, draftEvent, onClose }) {
           <span className="df-mobile-event-drawer-header-spacer" />
         </div>
         <div className="df-mobile-event-drawer-body">
-          <CourseDetail event={draftEvent} />
+          <CourseDetail event={visibleEvent} />
         </div>
       </div>
     </div>
@@ -229,6 +264,12 @@ function ScheduleCalendar({ events, themeDark }) {
   const [activeView, setActiveView] = useState(ViewType.WEEK)
   const [dayHeaderHost, setDayHeaderHost] = useState(null)
   const calendarRootRef = useRef(null)
+  const searchClosingRef = useRef(false)
+  const searchReplayRef = useRef(false)
+  const searchCloseTimerRef = useRef(null)
+  const detailClosingRef = useRef(false)
+  const detailReplayRef = useRef(false)
+  const detailCloseTimerRef = useRef(null)
   const calendarEvents = useMemo(() => toCalendarEvents(events), [events])
   const calendar = useCalendarApp({
     views: [
@@ -313,6 +354,113 @@ function ScheduleCalendar({ events, themeDark }) {
 
     return () => window.cancelAnimationFrame(frameId)
   }, [activeView])
+
+  useEffect(() => {
+    function handleMobileSearchBack(event) {
+      if (!(event.target instanceof Element)) return
+      if (searchReplayRef.current) {
+        searchReplayRef.current = false
+        return
+      }
+      const button = event.target.closest('.df-mobile-fullscreen .df-search-dialog-back-btn')
+      if (!button || searchClosingRef.current) return
+
+      const fullscreen = button.closest('.df-mobile-fullscreen')
+      if (!fullscreen) return
+
+      event.preventDefault()
+      event.stopPropagation()
+      searchClosingRef.current = true
+      fullscreen.classList.add('is-closing')
+      window.clearTimeout(searchCloseTimerRef.current)
+      searchCloseTimerRef.current = window.setTimeout(() => {
+        searchReplayRef.current = true
+        searchClosingRef.current = false
+        button.click()
+      }, SEARCH_CLOSE_MS)
+    }
+
+    document.addEventListener('click', handleMobileSearchBack, true)
+    return () => {
+      document.removeEventListener('click', handleMobileSearchBack, true)
+      window.clearTimeout(searchCloseTimerRef.current)
+    }
+  }, [])
+
+  useEffect(() => {
+    function handleDesktopDetailClose(event) {
+      if (detailReplayRef.current) {
+        detailReplayRef.current = false
+        return
+      }
+      if (window.innerWidth < 768 || detailClosingRef.current) return
+      if (!(event.target instanceof Element)) return
+
+      const panel = document.querySelector('[data-event-detail-panel]')
+      if (!panel) return
+
+      const target = event.target
+      const insideEvent = target.closest('[data-event-id]')
+      const insidePanel = target.closest('[data-event-detail-panel]')
+      const insideDialog = target.closest('[data-event-detail-dialog]')
+      const insidePopup = target.closest('[data-range-picker-popup], [data-calendar-picker-dropdown]')
+      if (insideEvent || insidePanel || insideDialog || insidePopup) return
+
+      event.preventDefault()
+      event.stopPropagation()
+      detailClosingRef.current = true
+      panel.classList.add('is-closing')
+      window.clearTimeout(detailCloseTimerRef.current)
+      detailCloseTimerRef.current = window.setTimeout(() => {
+        detailReplayRef.current = true
+        detailClosingRef.current = false
+        const replayTarget = target.isConnected ? target : document.body
+        replayTarget.dispatchEvent(new MouseEvent('mousedown', {
+          bubbles: true,
+          cancelable: true,
+          view: window,
+          detail: event.detail,
+          screenX: event.screenX,
+          screenY: event.screenY,
+          clientX: event.clientX,
+          clientY: event.clientY,
+          ctrlKey: event.ctrlKey,
+          shiftKey: event.shiftKey,
+          altKey: event.altKey,
+          metaKey: event.metaKey,
+          button: event.button,
+          buttons: event.buttons,
+        }))
+      }, DETAIL_CLOSE_MS)
+    }
+
+    document.addEventListener('mousedown', handleDesktopDetailClose, true)
+    return () => {
+      document.removeEventListener('mousedown', handleDesktopDetailClose, true)
+      window.clearTimeout(detailCloseTimerRef.current)
+    }
+  }, [])
+
+  function handleSearchResultClick({ defaultAction, source }) {
+    if (source !== 'mobile') {
+      defaultAction()
+      return
+    }
+
+    const fullscreen = document.querySelector('.df-mobile-fullscreen')
+    if (!fullscreen || searchClosingRef.current) {
+      defaultAction()
+      return
+    }
+
+    searchClosingRef.current = true
+    fullscreen.classList.add('is-closing')
+    window.clearTimeout(searchCloseTimerRef.current)
+    searchCloseTimerRef.current = window.setTimeout(() => {
+      searchClosingRef.current = false
+      defaultAction()
+    }, SEARCH_CLOSE_MS)
+  }
 
   useEffect(() => {
     const app = calendar.app
@@ -416,6 +564,7 @@ function ScheduleCalendar({ events, themeDark }) {
     <div className="schedule-calendar" ref={calendarRootRef}>
       <DayFlowCalendar
         calendar={calendar}
+        search={{ timeFormat: '24h', onResultClick: handleSearchResultClick }}
         eventDetailContent={CourseDetail}
         mobileEventDetail={MobileCourseDetail}
         eventContentDay={CourseTimedEventContent}
@@ -426,7 +575,7 @@ function ScheduleCalendar({ events, themeDark }) {
   )
 }
 
-function SubscriptionActions({ calendarUrl }) {
+function SubscriptionActions({ calendarUrl, isClosing = false }) {
   const [copied, setCopied] = useState(false)
   const [copyError, setCopyError] = useState(false)
   const webcalUrl = useMemo(() => calendarUrl.replace(/^https?:/, 'webcal:'), [calendarUrl])
@@ -443,7 +592,7 @@ function SubscriptionActions({ calendarUrl }) {
   }
 
   return (
-    <div className="workspace-actions">
+    <div className={`workspace-actions${isClosing ? ' is-closing' : ''}`}>
       <a className="primary-button" href={webcalUrl}>
         <Icon name="calendar" />
         一键订阅
@@ -466,51 +615,116 @@ export default function ScheduleWorkspace({ result, onLogout, themeDark, onToggl
   const [state, setState] = useState({ status: 'loading', data: null, message: '' })
   const [menuOpen, setMenuOpen] = useState(false)
   const [subscriptionVisible, setSubscriptionVisible] = useState(readSubscriptionVisibility)
+  const [subscriptionMounted, setSubscriptionMounted] = useState(subscriptionVisible)
+  const [subscriptionClosing, setSubscriptionClosing] = useState(false)
   const [aboutOpen, setAboutOpen] = useState(false)
+  const [aboutClosing, setAboutClosing] = useState(false)
+  const [menuClosing, setMenuClosing] = useState(false)
   const menuRef = useRef(null)
+  const menuCloseTimerRef = useRef(null)
+  const subscriptionCloseTimerRef = useRef(null)
+  const aboutCloseTimerRef = useRef(null)
 
   function reloadSchedule(forceRefresh = false) {
     setLoadRequest(({ id }) => ({ id: id + 1, forceRefresh }))
   }
 
+  function openMenu() {
+    window.clearTimeout(menuCloseTimerRef.current)
+    setMenuClosing(false)
+    setMenuOpen(true)
+  }
+
+  function closeMenu() {
+    if (!menuOpen || menuClosing) return
+
+    setMenuClosing(true)
+    menuCloseTimerRef.current = window.setTimeout(() => {
+      setMenuOpen(false)
+      setMenuClosing(false)
+    }, MENU_CLOSE_MS)
+  }
+
+  function toggleMenu() {
+    if (menuOpen && !menuClosing) {
+      closeMenu()
+      return
+    }
+    openMenu()
+  }
+
   function toggleSubscription() {
-    setSubscriptionVisible((visible) => {
-      const nextVisible = !visible
-      writeSubscriptionVisibility(nextVisible)
-      return nextVisible
-    })
-    setMenuOpen(false)
+    window.clearTimeout(subscriptionCloseTimerRef.current)
+
+    if (subscriptionVisible) {
+      setSubscriptionVisible(false)
+      setSubscriptionClosing(true)
+      writeSubscriptionVisibility(false)
+      subscriptionCloseTimerRef.current = window.setTimeout(() => {
+        setSubscriptionMounted(false)
+        setSubscriptionClosing(false)
+      }, SURFACE_CLOSE_MS)
+    } else {
+      setSubscriptionMounted(true)
+      setSubscriptionClosing(false)
+      setSubscriptionVisible(true)
+      writeSubscriptionVisibility(true)
+    }
+
+    closeMenu()
+  }
+
+  function openAbout() {
+    window.clearTimeout(aboutCloseTimerRef.current)
+    setAboutClosing(false)
+    setAboutOpen(true)
+  }
+
+  function closeAbout() {
+    if (!aboutOpen || aboutClosing) return
+
+    setAboutClosing(true)
+    aboutCloseTimerRef.current = window.setTimeout(() => {
+      setAboutOpen(false)
+      setAboutClosing(false)
+    }, MENU_CLOSE_MS)
   }
 
   useEffect(() => {
     if (!menuOpen) return undefined
 
-    function closeMenu(event) {
+    function handleDocumentMenuClose(event) {
       if (event.type === 'keydown') {
-        if (event.key === 'Escape') setMenuOpen(false)
+        if (event.key === 'Escape') closeMenu()
         return
       }
-      if (!menuRef.current?.contains(event.target)) setMenuOpen(false)
+      if (!menuRef.current?.contains(event.target)) closeMenu()
     }
 
-    document.addEventListener('pointerdown', closeMenu)
-    document.addEventListener('keydown', closeMenu)
+    document.addEventListener('pointerdown', handleDocumentMenuClose)
+    document.addEventListener('keydown', handleDocumentMenuClose)
     return () => {
-      document.removeEventListener('pointerdown', closeMenu)
-      document.removeEventListener('keydown', closeMenu)
+      document.removeEventListener('pointerdown', handleDocumentMenuClose)
+      document.removeEventListener('keydown', handleDocumentMenuClose)
     }
-  }, [menuOpen])
+  }, [menuOpen, menuClosing])
 
   useEffect(() => {
     if (!aboutOpen) return undefined
 
-    function closeAbout(event) {
-      if (event.key === 'Escape') setAboutOpen(false)
+    function handleDocumentAboutClose(event) {
+      if (event.key === 'Escape') closeAbout()
     }
 
-    document.addEventListener('keydown', closeAbout)
-    return () => document.removeEventListener('keydown', closeAbout)
-  }, [aboutOpen])
+    document.addEventListener('keydown', handleDocumentAboutClose)
+    return () => document.removeEventListener('keydown', handleDocumentAboutClose)
+  }, [aboutOpen, aboutClosing])
+
+  useEffect(() => () => {
+    window.clearTimeout(menuCloseTimerRef.current)
+    window.clearTimeout(subscriptionCloseTimerRef.current)
+    window.clearTimeout(aboutCloseTimerRef.current)
+  }, [])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -551,13 +765,13 @@ export default function ScheduleWorkspace({ result, onLogout, themeDark, onToggl
             type="button"
             aria-label="打开菜单"
             aria-haspopup="menu"
-            aria-expanded={menuOpen}
-            onClick={() => setMenuOpen((value) => !value)}
+            aria-expanded={menuOpen && !menuClosing}
+            onClick={toggleMenu}
           >
             <Icon name="menu" size={20} />
           </button>
           {menuOpen && (
-            <div className="workspace-menu__popover" role="menu">
+            <div className={`workspace-menu__popover${menuClosing ? ' is-closing' : ''}`} role="menu">
               <button
                 className="workspace-menu__item"
                 type="button"
@@ -572,7 +786,7 @@ export default function ScheduleWorkspace({ result, onLogout, themeDark, onToggl
                 type="button"
                 role="menuitem"
                 onClick={() => {
-                  setMenuOpen(false)
+                  closeMenu()
                   reloadSchedule(true)
                 }}
               >
@@ -584,7 +798,7 @@ export default function ScheduleWorkspace({ result, onLogout, themeDark, onToggl
                 type="button"
                 role="menuitem"
                 onClick={() => {
-                  setMenuOpen(false)
+                  closeMenu()
                   onToggleTheme()
                 }}
               >
@@ -597,7 +811,7 @@ export default function ScheduleWorkspace({ result, onLogout, themeDark, onToggl
                 target="_blank"
                 rel="noreferrer"
                 role="menuitem"
-                onClick={() => setMenuOpen(false)}
+                onClick={closeMenu}
               >
                 <Icon name="github" size={18} />
                 GitHub
@@ -607,8 +821,8 @@ export default function ScheduleWorkspace({ result, onLogout, themeDark, onToggl
                 type="button"
                 role="menuitem"
                 onClick={() => {
-                  setMenuOpen(false)
-                  setAboutOpen(true)
+                  closeMenu()
+                  openAbout()
                 }}
               >
                 <Icon name="info" size={18} />
@@ -620,8 +834,8 @@ export default function ScheduleWorkspace({ result, onLogout, themeDark, onToggl
                 type="button"
                 role="menuitem"
                 onClick={() => {
-                  setMenuOpen(false)
-                  onLogout()
+                  closeMenu()
+                  window.setTimeout(onLogout, MENU_CLOSE_MS)
                 }}
               >
                 <Icon name="logout" size={18} />
@@ -631,7 +845,12 @@ export default function ScheduleWorkspace({ result, onLogout, themeDark, onToggl
           )}
         </div>
       </div>
-      {subscriptionVisible && <SubscriptionActions calendarUrl={result.calendarUrl} />}
+      {subscriptionMounted && (
+        <SubscriptionActions
+          calendarUrl={result.calendarUrl}
+          isClosing={subscriptionClosing}
+        />
+      )}
 
       <section className="schedule-frame" aria-label="课程表">
         {state.status === 'loading' && (
@@ -662,7 +881,11 @@ export default function ScheduleWorkspace({ result, onLogout, themeDark, onToggl
       </section>
 
       {aboutOpen && (
-        <div className="about-dialog" role="presentation" onClick={() => setAboutOpen(false)}>
+        <div
+          className={`about-dialog${aboutClosing ? ' is-closing' : ''}`}
+          role="presentation"
+          onClick={closeAbout}
+        >
           <section
             className="about-dialog__panel"
             role="dialog"
@@ -676,7 +899,7 @@ export default function ScheduleWorkspace({ result, onLogout, themeDark, onToggl
                 className="about-dialog__close"
                 type="button"
                 aria-label="关闭关于"
-                onClick={() => setAboutOpen(false)}
+                onClick={closeAbout}
               >
                 <Icon name="close" size={18} />
               </button>

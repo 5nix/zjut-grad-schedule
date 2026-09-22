@@ -14,6 +14,12 @@
   --blue: #0075de;
   --blue-soft: #e6f3fe;
   --yellow: #ffb110;
+  --motion-ease: cubic-bezier(0.22, 1, 0.36, 1);
+  --motion-page-duration: 280ms;
+  --motion-surface-duration: 220ms;
+  --motion-quick-duration: 150ms;
+  --motion-close-duration: 150ms;
+  --motion-panel-close-duration: 300ms;
 }
 
 :root[data-theme='dark'] {
@@ -27,6 +33,61 @@
   --blue: #4aa8ff;
   --blue-soft: #153650;
   --yellow: #ffb820;
+}
+
+@keyframes page-reveal {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes surface-reveal {
+  from { opacity: 0; transform: translateY(-4px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes modal-backdrop-reveal {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes modal-panel-reveal {
+  from { opacity: 0; transform: scale(0.96); }
+  to { opacity: 1; transform: scale(1); }
+}
+
+@keyframes fullscreen-reveal {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes fullscreen-exit {
+  from { opacity: 1; transform: translateY(0); }
+  to { opacity: 0; transform: translateY(8px); }
+}
+
+@keyframes detail-panel-reveal {
+  from { opacity: 0; transform: translateY(4px) scale(0.98); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+
+@keyframes detail-panel-exit {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to { opacity: 0; transform: translateY(4px) scale(0.98); }
+}
+
+@keyframes surface-exit {
+  from { opacity: 1; transform: translateY(0) scale(1); }
+  to { opacity: 0; transform: translateY(-2px) scale(0.99); }
+}
+
+@keyframes modal-backdrop-exit {
+  from { opacity: 1; }
+  to { opacity: 0; }
+}
+
+@keyframes modal-panel-exit {
+  from { opacity: 1; transform: scale(1); }
+  to { opacity: 0; transform: scale(0.96); }
 }
 
 * { box-sizing: border-box; }
@@ -117,6 +178,7 @@ button { cursor: pointer; }
   grid-template-columns: minmax(0, 1fr) minmax(400px, 480px);
   gap: clamp(48px, 7vw, 112px);
   align-items: center;
+  animation: page-reveal var(--motion-page-duration) var(--motion-ease) both;
 }
 
 .hero-copy {
@@ -297,11 +359,13 @@ button { cursor: pointer; }
   font-size: 14px;
   font-weight: 650;
   text-decoration: none;
-  transition: transform 180ms ease, background 180ms ease;
+  transition: transform var(--motion-quick-duration) var(--motion-ease), background-color var(--motion-quick-duration) ease;
 }
 
 .primary-button { color: #fff; background: var(--blue); }
 .primary-button:hover:not(:disabled) { background: #0069c8; transform: translateY(-1px); }
+.primary-button:active:not(:disabled),
+.secondary-button:active { transform: translateY(0) scale(0.98); }
 .primary-button:disabled { opacity: 0.7; cursor: wait; }
 .secondary-button { color: var(--blue); background: var(--blue-soft); }
 .secondary-button:hover { background: var(--blue-soft); transform: translateY(-1px); }
@@ -325,6 +389,7 @@ button { cursor: pointer; }
   border-radius: 8px;
   font-size: 12px;
   line-height: 1.45;
+  animation: surface-reveal var(--motion-surface-duration) var(--motion-ease) both;
 }
 
 .notice--error { color: #9d2a1b; background: #fff0ee; }
@@ -396,6 +461,7 @@ button { cursor: pointer; }
   padding-bottom: max(8px, env(safe-area-inset-bottom, 0px));
   display: flex;
   flex-direction: column;
+  animation: page-reveal var(--motion-page-duration) var(--motion-ease) both;
 }
 
 .workspace-heading {
@@ -429,6 +495,7 @@ button { cursor: pointer; }
   justify-content: flex-end;
   flex-wrap: wrap;
   gap: 8px;
+  animation: surface-reveal var(--motion-surface-duration) var(--motion-ease) 60ms both;
 }
 
 .workspace-actions .primary-button,
@@ -457,6 +524,11 @@ button { cursor: pointer; }
   font-size: 11px;
 }
 
+.workspace-actions.is-closing {
+  pointer-events: none;
+  animation: surface-exit var(--motion-surface-duration) var(--motion-ease) both;
+}
+
 .workspace-menu {
   position: relative;
   flex: 0 0 auto;
@@ -472,11 +544,16 @@ button { cursor: pointer; }
   background: transparent;
   border: 1px solid var(--line);
   border-radius: 8px;
+  transition: transform var(--motion-quick-duration) var(--motion-ease), background-color var(--motion-quick-duration) ease, border-color var(--motion-quick-duration) ease;
 }
 
 .workspace-menu__trigger:hover,
 .workspace-menu__trigger[aria-expanded="true"] {
   background: var(--paper);
+}
+
+.workspace-menu__trigger:active {
+  transform: scale(0.96);
 }
 
 .workspace-menu__popover {
@@ -490,6 +567,13 @@ button { cursor: pointer; }
   border: 1px solid var(--line);
   border-radius: 9px;
   box-shadow: 0 12px 30px rgba(15, 15, 15, 0.12);
+  transform-origin: top right;
+  animation: surface-reveal var(--motion-surface-duration) var(--motion-ease) both;
+}
+
+.workspace-menu__popover.is-closing {
+  pointer-events: none;
+  animation: surface-exit var(--motion-close-duration) var(--motion-ease) both;
 }
 
 .workspace-menu__item {
@@ -537,6 +621,7 @@ button { cursor: pointer; }
   display: grid;
   place-items: center;
   background: rgba(15, 15, 15, 0.12);
+  animation: modal-backdrop-reveal var(--motion-quick-duration) ease both;
 }
 
 .about-dialog__panel {
@@ -547,6 +632,33 @@ button { cursor: pointer; }
   border: 1px solid var(--line);
   border-radius: 12px;
   box-shadow: 0 16px 40px rgba(15, 15, 15, 0.14);
+  animation: modal-panel-reveal var(--motion-surface-duration) var(--motion-ease) both;
+}
+
+.about-dialog.is-closing {
+  pointer-events: none;
+  animation: modal-backdrop-exit var(--motion-close-duration) ease both;
+}
+
+.about-dialog.is-closing .about-dialog__panel {
+  animation: modal-panel-exit var(--motion-close-duration) var(--motion-ease) both;
+}
+
+.df-event-detail-panel {
+  background-color: var(--white) !important;
+  border-color: var(--line) !important;
+  transform-origin: left center;
+  animation: detail-panel-reveal var(--motion-surface-duration) var(--motion-ease) both;
+}
+
+.df-event-detail-panel > div:first-child {
+  background-color: var(--white) !important;
+  border-color: var(--line) !important;
+}
+
+.df-event-detail-panel.is-closing {
+  pointer-events: none !important;
+  animation: detail-panel-exit var(--motion-surface-duration) var(--motion-ease) both;
 }
 
 .about-dialog__heading {
@@ -632,6 +744,16 @@ button { cursor: pointer; }
   flex-direction: column;
 }
 
+.schedule-frame .schedule-calendar {
+  animation: page-reveal var(--motion-page-duration) var(--motion-ease) both;
+}
+
+.schedule-frame .df-view-switcher,
+.schedule-frame .df-view-switcher-btn,
+.schedule-frame .df-navigation button {
+  transition: color var(--motion-quick-duration) ease, background-color var(--motion-quick-duration) ease, border-color var(--motion-quick-duration) ease;
+}
+
 .schedule-frame > .schedule-state {
   min-height: 0;
   height: auto;
@@ -703,6 +825,17 @@ button { cursor: pointer; }
 :root[data-theme='dark'] .df-mobile-fullscreen {
   color: var(--ink) !important;
   background-color: var(--paper) !important;
+  animation: fullscreen-reveal var(--motion-surface-duration) var(--motion-ease) both;
+}
+
+.df-mobile-fullscreen.is-closing {
+  pointer-events: none;
+  background-color: var(--paper) !important;
+  animation: fullscreen-exit var(--motion-surface-duration) var(--motion-ease) both;
+}
+
+:root[data-theme='dark'] .df-mobile-fullscreen.is-closing {
+  animation: fullscreen-exit var(--motion-surface-duration) var(--motion-ease) both;
 }
 
 :root[data-theme='dark'] .df-mobile-fullscreen .df-search-dialog-input {
@@ -785,6 +918,18 @@ button { cursor: pointer; }
 
 :root[data-theme='dark'] .df-mobile-event-drawer-backdrop {
   background-color: rgba(0, 0, 0, 0.46) !important;
+}
+
+.df-mobile-event-drawer.is-closing {
+  pointer-events: none;
+}
+
+.df-mobile-event-drawer.is-closing .df-mobile-event-drawer-backdrop {
+  animation: modal-backdrop-exit var(--motion-panel-close-duration) ease both;
+}
+
+.df-mobile-event-drawer.is-closing .df-mobile-event-drawer-panel {
+  animation: df-slide-down var(--motion-panel-close-duration) cubic-bezier(0.16, 1, 0.3, 1) both;
 }
 
 .schedule-frame .df-agenda-title,
