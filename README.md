@@ -33,4 +33,4 @@ npm run build
 
 [MIT](LICENSE)
 
-日历视图基于 [DayFlow](https://github.com/dayflow-js/calendar)，遵循 MIT License。
+日历视图基于 [DayFlow](https://github.com/dayflow-js/calendar)，MIT
