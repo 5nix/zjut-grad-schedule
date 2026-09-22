@@ -14,6 +14,21 @@ import { Temporal } from 'temporal-polyfill'
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
 const GITHUB_URL = 'https://github.com/5nix/zjut-grad-schedule'
+const SUBSCRIPTION_VISIBILITY_COOKIE = 'zjut_subscription_visible'
+
+function readCookie(name) {
+  const prefix = `${encodeURIComponent(name)}=`
+  const item = document.cookie.split('; ').find((entry) => entry.startsWith(prefix))
+  return item ? decodeURIComponent(item.slice(prefix.length)) : ''
+}
+
+function readSubscriptionVisibility() {
+  return readCookie(SUBSCRIPTION_VISIBILITY_COOKIE) !== '0'
+}
+
+function writeSubscriptionVisibility(visible) {
+  document.cookie = `${SUBSCRIPTION_VISIBILITY_COOKIE}=${visible ? '1' : '0'}; Max-Age=31536000; Path=/; SameSite=Lax`
+}
 
 function Icon({ name, size = 18 }) {
   const common = {
@@ -34,6 +49,10 @@ function Icon({ name, size = 18 }) {
     logout: <><path d="M10 17l5-5-5-5" /><path d="M15 12H3" /><path d="M21 19V5a2 2 0 0 0-2-2h-4" /><path d="M15 21h4a2 2 0 0 0 2-2" /></>,
     github: <><path d="M15 22v-4c0-1.1-.4-1.8-1-2.2 3.3-.4 6.8-1.6 6.8-7.1 0-1.6-.6-2.9-1.6-3.9.2-.4.7-2-.2-3.8 0 0-1.3-.4-4.1 1.5a14 14 0 0 0-7.5 0C5.6.6 4.3 1 4.3 1c-.9 1.8-.4 3.4-.2 3.8-1 1-1.6 2.3-1.6 3.9 0 5.5 3.5 6.7 6.8 7.1-.4.4-.8 1.1-1 2.2v4" /><path d="M8 20c-3 .9-3-1.5-4.2-1.9" /></>,
     refresh: <><path d="M20 11a8 8 0 0 0-14.7-4L4 9" /><path d="M4 4v5h5" /><path d="M4 13a8 8 0 0 0 14.7 4L20 15" /><path d="M20 20v-5h-5" /></>,
+    chevronUp: <path d="m6 15 6-6 6 6" />,
+    chevronDown: <path d="m6 9 6 6 6-6" />,
+    info: <><circle cx="12" cy="12" r="9" /><path d="M12 10v6" /><path d="M12 7h.01" /></>,
+    close: <><path d="m6 6 12 12" /><path d="m18 6-12 12" /></>,
     previous: <path d="m15 18-6-6 6-6" />,
     next: <path d="m9 18 6-6-6-6" />,
     calendar: <><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M16 3v4M8 3v4M3 10h18" /></>,
@@ -440,10 +459,21 @@ export default function ScheduleWorkspace({ result, onLogout }) {
   const [loadRequest, setLoadRequest] = useState({ id: 0, forceRefresh: false })
   const [state, setState] = useState({ status: 'loading', data: null, message: '' })
   const [menuOpen, setMenuOpen] = useState(false)
+  const [subscriptionVisible, setSubscriptionVisible] = useState(readSubscriptionVisibility)
+  const [aboutOpen, setAboutOpen] = useState(false)
   const menuRef = useRef(null)
 
   function reloadSchedule(forceRefresh = false) {
     setLoadRequest(({ id }) => ({ id: id + 1, forceRefresh }))
+  }
+
+  function toggleSubscription() {
+    setSubscriptionVisible((visible) => {
+      const nextVisible = !visible
+      writeSubscriptionVisibility(nextVisible)
+      return nextVisible
+    })
+    setMenuOpen(false)
   }
 
   useEffect(() => {
@@ -464,6 +494,17 @@ export default function ScheduleWorkspace({ result, onLogout }) {
       document.removeEventListener('keydown', closeMenu)
     }
   }, [menuOpen])
+
+  useEffect(() => {
+    if (!aboutOpen) return undefined
+
+    function closeAbout(event) {
+      if (event.key === 'Escape') setAboutOpen(false)
+    }
+
+    document.addEventListener('keydown', closeAbout)
+    return () => document.removeEventListener('keydown', closeAbout)
+  }, [aboutOpen])
 
   useEffect(() => {
     const controller = new AbortController()
@@ -515,6 +556,15 @@ export default function ScheduleWorkspace({ result, onLogout }) {
                 className="workspace-menu__item"
                 type="button"
                 role="menuitem"
+                onClick={toggleSubscription}
+              >
+                <Icon name={subscriptionVisible ? 'chevronUp' : 'chevronDown'} size={18} />
+                {subscriptionVisible ? '隐藏订阅' : '展示订阅'}
+              </button>
+              <button
+                className="workspace-menu__item"
+                type="button"
+                role="menuitem"
                 onClick={() => {
                   setMenuOpen(false)
                   reloadSchedule(true)
@@ -540,6 +590,18 @@ export default function ScheduleWorkspace({ result, onLogout }) {
                 role="menuitem"
                 onClick={() => {
                   setMenuOpen(false)
+                  setAboutOpen(true)
+                }}
+              >
+                <Icon name="info" size={18} />
+                关于
+              </button>
+              <button
+                className="workspace-menu__item"
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setMenuOpen(false)
                   onLogout()
                 }}
               >
@@ -550,7 +612,7 @@ export default function ScheduleWorkspace({ result, onLogout }) {
           )}
         </div>
       </div>
-      <SubscriptionActions calendarUrl={result.calendarUrl} />
+      {subscriptionVisible && <SubscriptionActions calendarUrl={result.calendarUrl} />}
 
       <section className="schedule-frame" aria-label="课程表">
         {state.status === 'loading' && (
@@ -579,6 +641,37 @@ export default function ScheduleWorkspace({ result, onLogout }) {
           <ScheduleCalendar events={state.data.events} />
         )}
       </section>
+
+      {aboutOpen && (
+        <div className="about-dialog" role="presentation" onClick={() => setAboutOpen(false)}>
+          <section
+            className="about-dialog__panel"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="about-dialog-title"
+            onClick={(event) => event.stopPropagation()}
+          >
+            <div className="about-dialog__heading">
+              <h2 id="about-dialog-title">关于</h2>
+              <button
+                className="about-dialog__close"
+                type="button"
+                aria-label="关闭关于"
+                onClick={() => setAboutOpen(false)}
+              >
+                <Icon name="close" size={18} />
+              </button>
+            </div>
+            <div className="about-dialog__body">
+              <strong>浙工大研究生课表</strong>
+              <p>课程表订阅与日历展示工具。</p>
+              <p>© 2026 Zihan S.</p>
+              <p>本项目为个人开源项目，不代表浙江工业大学，也非学校官方服务。</p>
+              <p>日历视图基于 <a href="https://github.com/dayflow-js/calendar" target="_blank" rel="noreferrer">DayFlow</a>，遵循 MIT License。</p>
+            </div>
+          </section>
+        </div>
+      )}
     </div>
   )
 }
