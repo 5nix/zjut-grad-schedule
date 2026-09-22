@@ -25,7 +25,7 @@ const calendarRefreshes = new Map();
 const loginFailures = new Map();
 const authCooldowns = new Map();
 
-const calendarCacheMs = positiveInteger("CALENDAR_CACHE_SECONDS", 600) * 1000;
+const calendarCacheMs = positiveInteger("CALENDAR_CACHE_SECONDS", 60 * 60) * 1000;
 const activeClientMs = positiveInteger("ACTIVE_CLIENT_SECONDS", 60 * 60) * 1000;
 const sessionCookieName = "zjut_session";
 const sessionCookieMaxAge = positiveInteger("SESSION_COOKIE_MAX_AGE_SECONDS", 365 * 24 * 60 * 60);
@@ -282,10 +282,10 @@ function schedulePayload(feed) {
   };
 }
 
-async function getCalendarFeed(studentId) {
+async function getCalendarFeed(studentId, { forceRefresh = false } = {}) {
   const now = Date.now();
   const cached = calendarCache.get(studentId);
-  if (cached && cached.expiresAt > now) {
+  if (!forceRefresh && cached && cached.expiresAt > now) {
     return { feed: cached, state: cached.stale ? "stale_fallback" : "cache_hit" };
   }
 
@@ -296,7 +296,7 @@ async function getCalendarFeed(studentId) {
     try {
       return { feed: await refreshCalendar(studentId), state: "upstream_refresh" };
     } catch (error) {
-      const snapshot = await calendarStore.load(studentId);
+      const snapshot = cached ?? await calendarStore.load(studentId);
       const fallback = snapshot ? staleFeed(snapshot, Date.now()) : null;
       if (!fallback) throw error;
       calendarCache.set(studentId, fallback);
@@ -549,14 +549,16 @@ async function handle(request, response) {
       return;
     }
     const startedAt = Date.now();
+    const forceRefresh = requestUrl.searchParams.get("refresh") === "1";
     let result;
     let payload;
     try {
-      result = await getCalendarFeed(session.sub);
+      result = await getCalendarFeed(session.sub, { forceRefresh });
       payload = schedulePayload(result.feed);
     } catch (error) {
       eventLog.write("schedule_request", {
         studentId: session.sub,
+        forceRefresh,
         state: "failed",
         status: error.status ?? null,
         durationMs: Date.now() - startedAt,
@@ -565,6 +567,7 @@ async function handle(request, response) {
     }
     eventLog.write("schedule_request", {
       studentId: session.sub,
+      forceRefresh,
       state: result.state,
       eventCount: payload.eventCount,
       warningCount: payload.warningCount,

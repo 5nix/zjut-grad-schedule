@@ -33,6 +33,7 @@ function Icon({ name, size = 18 }) {
     menu: <><path d="M4 6h16" /><path d="M4 12h16" /><path d="M4 18h16" /></>,
     logout: <><path d="M10 17l5-5-5-5" /><path d="M15 12H3" /><path d="M21 19V5a2 2 0 0 0-2-2h-4" /><path d="M15 21h4a2 2 0 0 0 2-2" /></>,
     github: <><path d="M15 22v-4c0-1.1-.4-1.8-1-2.2 3.3-.4 6.8-1.6 6.8-7.1 0-1.6-.6-2.9-1.6-3.9.2-.4.7-2-.2-3.8 0 0-1.3-.4-4.1 1.5a14 14 0 0 0-7.5 0C5.6.6 4.3 1 4.3 1c-.9 1.8-.4 3.4-.2 3.8-1 1-1.6 2.3-1.6 3.9 0 5.5 3.5 6.7 6.8 7.1-.4.4-.8 1.1-1 2.2v4" /><path d="M8 20c-3 .9-3-1.5-4.2-1.9" /></>,
+    refresh: <><path d="M20 11a8 8 0 0 0-14.7-4L4 9" /><path d="M4 4v5h5" /><path d="M4 13a8 8 0 0 0 14.7 4L20 15" /><path d="M20 20v-5h-5" /></>,
     previous: <path d="m15 18-6-6 6-6" />,
     next: <path d="m9 18 6-6-6-6" />,
     calendar: <><rect x="3" y="5" width="18" height="16" rx="2" /><path d="M16 3v4M8 3v4M3 10h18" /></>,
@@ -436,10 +437,14 @@ function SubscriptionActions({ calendarUrl }) {
 }
 
 export default function ScheduleWorkspace({ result, onLogout }) {
-  const [attempt, setAttempt] = useState(0)
+  const [loadRequest, setLoadRequest] = useState({ id: 0, forceRefresh: false })
   const [state, setState] = useState({ status: 'loading', data: null, message: '' })
   const [menuOpen, setMenuOpen] = useState(false)
   const menuRef = useRef(null)
+
+  function reloadSchedule(forceRefresh = false) {
+    setLoadRequest(({ id }) => ({ id: id + 1, forceRefresh }))
+  }
 
   useEffect(() => {
     if (!menuOpen) return undefined
@@ -466,7 +471,8 @@ export default function ScheduleWorkspace({ result, onLogout }) {
 
     async function loadSchedule() {
       try {
-        const response = await fetch(`${API_BASE}/api/schedule`, {
+        const scheduleUrl = `${API_BASE}/api/schedule${loadRequest.forceRefresh ? '?refresh=1' : ''}`
+        const response = await fetch(scheduleUrl, {
           credentials: 'include',
           signal: controller.signal,
         })
@@ -484,7 +490,7 @@ export default function ScheduleWorkspace({ result, onLogout }) {
 
     loadSchedule()
     return () => controller.abort()
-  }, [attempt])
+  }, [loadRequest])
 
   return (
     <div className="workspace">
@@ -505,6 +511,18 @@ export default function ScheduleWorkspace({ result, onLogout }) {
           </button>
           {menuOpen && (
             <div className="workspace-menu__popover" role="menu">
+              <button
+                className="workspace-menu__item"
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setMenuOpen(false)
+                  reloadSchedule(true)
+                }}
+              >
+                <Icon name="refresh" size={18} />
+                刷新课表
+              </button>
               <a
                 className="workspace-menu__item"
                 href={GITHUB_URL}
@@ -546,7 +564,7 @@ export default function ScheduleWorkspace({ result, onLogout }) {
             <div className="schedule-state__icon">!</div>
             <strong>课程表没有加载出来</strong>
             <small>{state.message}</small>
-            <button className="primary-button" type="button" onClick={() => setAttempt((value) => value + 1)}>
+            <button className="primary-button" type="button" onClick={() => reloadSchedule(true)}>
               重新加载
             </button>
           </div>
