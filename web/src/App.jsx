@@ -242,7 +242,12 @@ export default function App() {
   }, [themeMode])
 
   useLayoutEffect(() => {
-    document.documentElement.dataset.theme = themeDark ? 'dark' : 'light'
+    const root = document.documentElement
+    const theme = themeDark ? 'dark' : 'light'
+
+    root.dataset.theme = theme
+    root.classList.toggle('dark', themeDark)
+    root.classList.toggle('light', !themeDark)
     document.querySelector('meta[name="theme-color"]')?.setAttribute('content', themeDark ? '#15191c' : '#f6f5f4')
   }, [themeDark])
 

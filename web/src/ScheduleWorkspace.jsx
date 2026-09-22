@@ -225,7 +225,7 @@ function MobileCourseDetail({ isOpen, draftEvent, onClose }) {
   )
 }
 
-function ScheduleCalendar({ events }) {
+function ScheduleCalendar({ events, themeDark }) {
   const [activeView, setActiveView] = useState(ViewType.WEEK)
   const [dayHeaderHost, setDayHeaderHost] = useState(null)
   const calendarRootRef = useRef(null)
@@ -282,7 +282,7 @@ function ScheduleCalendar({ events }) {
     timeZone: 'Asia/Shanghai',
     timeFormat: '24h',
     theme: {
-      mode: 'light',
+      mode: themeDark ? 'dark' : 'light',
       colors: {
         background: '#ffffff',
         foreground: '#0f0f0f',
@@ -296,6 +296,10 @@ function ScheduleCalendar({ events }) {
       },
     },
   })
+
+  useEffect(() => {
+    calendar.app.setTheme(themeDark ? 'dark' : 'light')
+  }, [calendar.app, themeDark])
 
   useEffect(() => {
     if (activeView !== ViewType.DAY) {
@@ -653,7 +657,7 @@ export default function ScheduleWorkspace({ result, onLogout, themeDark, onToggl
           </div>
         )}
         {state.status === 'ready' && state.data.events.length > 0 && (
-          <ScheduleCalendar events={state.data.events} />
+          <ScheduleCalendar events={state.data.events} themeDark={themeDark} />
         )}
       </section>
 

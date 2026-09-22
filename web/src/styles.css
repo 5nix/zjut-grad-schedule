@@ -413,7 +413,7 @@ button { cursor: pointer; }
 .workspace h1 {
   margin: 0;
   color: var(--ink);
-  font-size: clamp(30px, 3vw, 46px);
+  font-size: clamp(28px, 2.6vw, 40px);
   font-weight: 680;
   line-height: 1;
   letter-spacing: -0.055em;
@@ -463,8 +463,8 @@ button { cursor: pointer; }
 }
 
 .workspace-menu__trigger {
-  width: 42px;
-  height: 42px;
+  width: 38px;
+  height: 38px;
   display: grid;
   place-items: center;
   color: var(--ink);
@@ -604,7 +604,7 @@ button { cursor: pointer; }
 
 .schedule-frame {
   min-height: 0;
-  margin-top: 18px;
+  margin-top: 0;
   overflow: hidden;
   flex: 1 1 auto;
   display: flex;
@@ -706,6 +706,25 @@ button { cursor: pointer; }
 .schedule-frame .df-event-detail-panel,
 .schedule-frame .df-dialog-container {
   font-family: inherit;
+}
+
+:root[data-theme='dark'] .df-event-detail-panel,
+:root[data-theme='dark'] .df-dialog-container,
+:root[data-theme='dark'] .df-mobile-event-drawer-panel {
+  --df-color-background: var(--calendar-paper) !important;
+  --df-color-foreground: var(--ink) !important;
+  --df-color-border: var(--line) !important;
+  --df-color-card: var(--white) !important;
+  --df-color-card-foreground: var(--ink) !important;
+  --df-color-muted: #20272b !important;
+  --df-color-muted-foreground: var(--muted) !important;
+  background-color: var(--white) !important;
+  color: var(--ink) !important;
+  border-color: var(--line) !important;
+}
+
+:root[data-theme='dark'] .df-mobile-event-drawer-backdrop {
+  background-color: rgba(0, 0, 0, 0.46) !important;
 }
 
 .schedule-frame .df-agenda-title,
@@ -931,7 +950,7 @@ button { cursor: pointer; }
     flex-direction: row;
     gap: 14px;
   }
-  .workspace h1 { font-size: 34px; }
+  .workspace h1 { font-size: 30px; }
   .workspace-actions {
     position: static;
     width: 100%;
@@ -943,7 +962,7 @@ button { cursor: pointer; }
   .workspace-actions__error { grid-column: 1 / -1; }
   .schedule-frame {
     min-height: 0;
-    margin-top: 14px;
+    margin-top: 0;
     width: calc(100% + 32px);
     margin-left: -16px;
     margin-right: -16px;
@@ -1042,6 +1061,22 @@ button { cursor: pointer; }
     width: min(100%, 560px);
     min-height: 0;
     justify-self: center;
+  }
+}
+
+@media (min-width: 761px) and (max-width: 1024px) {
+  .schedule-frame .df-mobile-event-drawer-panel {
+    height: auto;
+    max-height: min(68vh, 520px);
+    background-color: var(--df-color-card, #fff);
+  }
+
+  .schedule-frame .df-mobile-event-drawer-body {
+    padding-bottom: max(84px, calc(16px + env(safe-area-inset-bottom, 0px)));
+  }
+
+  .schedule-frame .df-mobile-event-drawer-backdrop {
+    background-color: rgba(15, 15, 15, 0.1);
   }
 }
 
