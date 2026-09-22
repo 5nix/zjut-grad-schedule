@@ -393,6 +393,16 @@ button { cursor: pointer; }
   font-size: 13px;
 }
 
+.workspace-actions .secondary-button {
+  color: var(--blue);
+  background: transparent;
+  border: 1px solid var(--blue);
+}
+
+.workspace-actions .secondary-button:hover {
+  background: var(--blue-soft);
+}
+
 .workspace-actions svg {
   flex: 0 0 auto;
 }
@@ -458,6 +468,21 @@ button { cursor: pointer; }
   outline: none;
 }
 
+.workspace-menu__separator {
+  height: 1px;
+  margin: 4px 6px;
+  background: var(--line);
+}
+
+.workspace-menu__item--danger {
+  color: #c7342b;
+}
+
+.workspace-menu__item--danger:hover,
+.workspace-menu__item--danger:focus-visible {
+  background: rgba(199, 52, 43, 0.08);
+}
+
 .about-dialog {
   position: fixed;
   z-index: 40;
@@ -515,13 +540,8 @@ button { cursor: pointer; }
   gap: 9px;
   color: var(--muted);
   font-size: 13px;
+  font-weight: 500;
   line-height: 1.6;
-}
-
-.about-dialog__body strong {
-  color: var(--ink);
-  font-size: 15px;
-  font-weight: 650;
 }
 
 .about-dialog__body p { margin: 0; }
@@ -529,6 +549,10 @@ button { cursor: pointer; }
 .about-dialog__body a {
   color: var(--blue);
   text-decoration: none;
+}
+
+.about-dialog__body .about-dialog__repo {
+  font-weight: 650;
 }
 
 .about-dialog__body a:hover { text-decoration: underline; }

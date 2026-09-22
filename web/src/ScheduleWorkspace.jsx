@@ -596,8 +596,9 @@ export default function ScheduleWorkspace({ result, onLogout }) {
                 <Icon name="info" size={18} />
                 关于
               </button>
+              <div className="workspace-menu__separator" role="separator" />
               <button
-                className="workspace-menu__item"
+                className="workspace-menu__item workspace-menu__item--danger"
                 type="button"
                 role="menuitem"
                 onClick={() => {
@@ -663,11 +664,11 @@ export default function ScheduleWorkspace({ result, onLogout }) {
               </button>
             </div>
             <div className="about-dialog__body">
-              <strong>浙工大研究生课表</strong>
+              <p><a className="about-dialog__repo" href={GITHUB_URL} target="_blank" rel="noreferrer">zjut-grad-schedule</a></p>
               <p>课程表订阅与日历展示工具。</p>
-              <p>© 2026 Zihan S.</p>
-              <p>本项目为个人开源项目，不代表浙江工业大学，也非学校官方服务。</p>
+              <p>本项目从属于个人，与浙江工业大学无关。</p>
               <p>日历视图基于 <a href="https://github.com/dayflow-js/calendar" target="_blank" rel="noreferrer">DayFlow</a>，遵循 MIT License。</p>
+              <p>© 2026 Zihan S.</p>
             </div>
           </section>
         </div>
