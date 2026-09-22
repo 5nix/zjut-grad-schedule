@@ -337,14 +337,26 @@ button { cursor: pointer; }
 .back-button:hover { color: var(--ink); background: var(--paper); }
 
 .site-shell--workspace {
+  height: 100%;
+  min-height: 0;
+  max-height: 100%;
   padding-left: 24px;
   padding-right: 24px;
+  display: flex;
+  flex-direction: column;
 }
 
 .workspace-main {
   width: min(100%, 1440px);
   min-height: 100vh;
   margin: 0 auto;
+}
+
+.site-shell--workspace .workspace-main {
+  height: 100%;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
 }
 
 .workspace-load-fallback {
@@ -360,6 +372,14 @@ button { cursor: pointer; }
 .workspace {
   position: relative;
   padding: 20px 0 34px;
+}
+
+.site-shell--workspace .workspace {
+  min-height: 0;
+  flex: 1 1 auto;
+  padding-bottom: max(8px, env(safe-area-inset-bottom, 0px));
+  display: flex;
+  flex-direction: column;
 }
 
 .workspace-heading {
@@ -567,19 +587,38 @@ button { cursor: pointer; }
 .about-dialog__body a:hover { text-decoration: underline; }
 
 .schedule-frame {
-  min-height: calc(100vh - 188px);
+  min-height: 0;
   margin-top: 18px;
   overflow: hidden;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
 }
 
 .schedule-frame .df-calendar-container {
   width: 100%;
-  min-height: 620px;
-  height: clamp(620px, calc(100vh - 204px), 920px);
+  min-height: 0;
+  height: auto;
+  flex: 1 1 0%;
   border: 0;
   border-radius: 0;
   box-shadow: none;
   font-family: inherit;
+}
+
+.schedule-frame .schedule-calendar,
+.schedule-frame .df-calendar-wrapper {
+  min-height: 0;
+  height: 100%;
+  flex: 1 1 auto;
+  display: flex;
+  flex-direction: column;
+}
+
+.schedule-frame > .schedule-state {
+  min-height: 0;
+  height: auto;
+  flex: 1 1 auto;
 }
 
 .schedule-frame .df-calendar-container {
@@ -756,6 +795,22 @@ button { cursor: pointer; }
 
 .site-footer a:hover { color: var(--muted); }
 
+.site-shell--workspace .site-footer {
+  position: fixed;
+  z-index: 20;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  margin: 0;
+  padding: 0 16px max(8px, env(safe-area-inset-bottom, 0px));
+  pointer-events: none;
+}
+
+.site-shell--workspace .site-footer a {
+  pointer-events: auto;
+}
+
 @media (max-width: 1060px) {
   .hero {
     grid-template-columns: minmax(0, 1fr) minmax(390px, 440px);
@@ -788,7 +843,7 @@ button { cursor: pointer; }
     min-height: 0;
     flex: 1 1 auto;
     padding-top: 14px;
-    padding-bottom: 16px;
+    padding-bottom: max(8px, env(safe-area-inset-bottom, 0px));
     display: flex;
     flex-direction: column;
   }
@@ -859,8 +914,7 @@ button { cursor: pointer; }
     align-items: flex-start;
   }
   .site-shell--workspace .site-footer {
-    flex: 0 0 auto;
-    padding-bottom: max(16px, env(safe-area-inset-bottom, 0px));
+    padding-bottom: max(8px, env(safe-area-inset-bottom, 0px));
   }
 
   /* DayFlow 的中文 narrow weekday 会全部变成“周”，手机端改回完整星期名。 */
