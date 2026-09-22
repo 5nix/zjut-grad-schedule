@@ -52,6 +52,8 @@ function Icon({ name, size = 18 }) {
     chevronUp: <path d="m6 15 6-6 6 6" />,
     chevronDown: <path d="m6 9 6 6 6-6" />,
     info: <><circle cx="12" cy="12" r="9" /><path d="M12 10v6" /><path d="M12 7h.01" /></>,
+    moon: <path d="M20.4 15.2A8.5 8.5 0 0 1 8.8 3.6 8.5 8.5 0 1 0 20.4 15.2Z" />,
+    sun: <><circle cx="12" cy="12" r="3.5" /><path d="M12 2v2M12 20v2M4.93 4.93l1.42 1.42M17.65 17.65l1.42 1.42M2 12h2M20 12h2M4.93 19.07l1.42-1.42M17.65 6.35l1.42-1.42" /></>,
     close: <><path d="m6 6 12 12" /><path d="m18 6-12 12" /></>,
     previous: <path d="m15 18-6-6 6-6" />,
     next: <path d="m9 18 6-6-6-6" />,
@@ -455,7 +457,7 @@ function SubscriptionActions({ calendarUrl }) {
   )
 }
 
-export default function ScheduleWorkspace({ result, onLogout }) {
+export default function ScheduleWorkspace({ result, onLogout, themeDark, onToggleTheme }) {
   const [loadRequest, setLoadRequest] = useState({ id: 0, forceRefresh: false })
   const [state, setState] = useState({ status: 'loading', data: null, message: '' })
   const [menuOpen, setMenuOpen] = useState(false)
@@ -572,6 +574,18 @@ export default function ScheduleWorkspace({ result, onLogout }) {
               >
                 <Icon name="refresh" size={18} />
                 刷新课表
+              </button>
+              <button
+                className="workspace-menu__item"
+                type="button"
+                role="menuitem"
+                onClick={() => {
+                  setMenuOpen(false)
+                  onToggleTheme()
+                }}
+              >
+                <Icon name={themeDark ? 'sun' : 'moon'} size={18} />
+                {themeDark ? '浅色模式' : '深色模式'}
               </button>
               <a
                 className="workspace-menu__item"

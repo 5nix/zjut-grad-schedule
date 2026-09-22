@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useId, useState } from 'react'
+import { lazy, Suspense, useEffect, useId, useLayoutEffect, useState } from 'react'
 
 const ScheduleWorkspace = lazy(() => import('./ScheduleWorkspace.jsx'))
 
@@ -7,6 +7,19 @@ const GITHUB_URL = 'https://github.com/5nix/zjut-grad-schedule'
 const ICP_URL = 'https://beian.miit.gov.cn/'
 const ICP_RECORD = (import.meta.env.VITE_ICP_RECORD || '').trim()
 const LOCAL_LOGOUT_KEY = 'zjut_local_logout'
+const THEME_COOKIE = 'zjut_theme'
+const THEME_COOKIE_MAX_AGE = 60 * 60
+
+function readThemeMode() {
+  const prefix = `${encodeURIComponent(THEME_COOKIE)}=`
+  const item = document.cookie.split('; ').find((entry) => entry.startsWith(prefix))
+  const value = item ? decodeURIComponent(item.slice(prefix.length)) : ''
+  return value === 'dark' || value === 'light' ? value : 'system'
+}
+
+function writeThemeMode(mode) {
+  document.cookie = `${encodeURIComponent(THEME_COOKIE)}=${mode}; Max-Age=${THEME_COOKIE_MAX_AGE}; Path=/; SameSite=Lax`
+}
 
 function hasLocalLogout() {
   try {
@@ -210,10 +223,28 @@ function LoginForm({ onSuccess }) {
 export default function App() {
   const [result, setResult] = useState(null)
   const [sessionReady, setSessionReady] = useState(false)
+  const [themeMode, setThemeMode] = useState(readThemeMode)
+  const [systemDark, setSystemDark] = useState(() => window.matchMedia('(prefers-color-scheme: dark)').matches)
+  const themeDark = themeMode === 'dark' || (themeMode === 'system' && systemDark)
 
   useEffect(() => {
     document.title = '浙工大研究生课表'
   }, [])
+
+  useEffect(() => {
+    const media = window.matchMedia('(prefers-color-scheme: dark)')
+    const syncSystemTheme = () => setSystemDark(media.matches)
+    syncSystemTheme()
+    if (themeMode !== 'system') return undefined
+
+    media.addEventListener?.('change', syncSystemTheme)
+    return () => media.removeEventListener?.('change', syncSystemTheme)
+  }, [themeMode])
+
+  useLayoutEffect(() => {
+    document.documentElement.dataset.theme = themeDark ? 'dark' : 'light'
+    document.querySelector('meta[name="theme-color"]')?.setAttribute('content', themeDark ? '#15191c' : '#f6f5f4')
+  }, [themeDark])
 
   useEffect(() => {
     const root = document.documentElement
@@ -264,6 +295,12 @@ export default function App() {
     setSessionReady(true)
   }
 
+  function handleThemeToggle() {
+    const nextMode = themeDark ? 'light' : 'dark'
+    writeThemeMode(nextMode)
+    setThemeMode(nextMode)
+  }
+
   return (
     <div className={`site-shell ${result ? 'site-shell--workspace' : ''}`}>
       {sessionReady && !result && (
@@ -286,7 +323,7 @@ export default function App() {
           </div>
         ) : result ? (
           <Suspense fallback={<div className="workspace-load-fallback"><span className="spinner spinner--blue" aria-hidden="true" />正在打开课程表</div>}>
-            <ScheduleWorkspace result={result} onLogout={handleLocalLogout} />
+            <ScheduleWorkspace result={result} onLogout={handleLocalLogout} themeDark={themeDark} onToggleTheme={handleThemeToggle} />
           </Suspense>
         ) : (
           <>
