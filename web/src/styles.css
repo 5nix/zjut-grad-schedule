@@ -413,7 +413,7 @@ button { cursor: pointer; }
 .workspace h1 {
   margin: 0;
   color: var(--ink);
-  font-size: clamp(27px, 2.5vw, 38px);
+  font-size: clamp(26px, 2.35vw, 36px);
   font-weight: 680;
   line-height: 1;
   letter-spacing: -0.055em;
@@ -433,9 +433,9 @@ button { cursor: pointer; }
 
 .workspace-actions .primary-button,
 .workspace-actions .secondary-button {
-  min-height: 40px;
-  padding: 0 14px;
-  font-size: 13px;
+  min-height: 38px;
+  padding: 0 12px;
+  font-size: 12px;
 }
 
 .workspace-actions .secondary-button {
@@ -720,6 +720,11 @@ button { cursor: pointer; }
   color: var(--muted) !important;
 }
 
+:root[data-theme='dark'] .df-mobile-fullscreen .df-search-dialog-input-clear,
+:root[data-theme='dark'] .df-mobile-fullscreen .df-search-dialog-clear-icon {
+  color: var(--muted) !important;
+}
+
 :root[data-theme='dark'] .df-mobile-fullscreen .df-search-results-date-header {
   color: var(--muted) !important;
   background-color: var(--calendar-paper) !important;
@@ -732,6 +737,26 @@ button { cursor: pointer; }
 
 :root[data-theme='dark'] .df-mobile-fullscreen .df-search-results-color-bar {
   background-color: var(--blue) !important;
+}
+
+:root[data-theme='dark'] .df-mobile-fullscreen .df-search-results-event,
+:root[data-theme='dark'] .df-mobile-fullscreen .df-search-results-event-inner,
+:root[data-theme='dark'] .df-mobile-fullscreen .df-search-results-event-content {
+  color: var(--ink) !important;
+  background-color: transparent !important;
+}
+
+:root[data-theme='dark'] .df-mobile-fullscreen .df-search-results-event-title {
+  color: var(--ink) !important;
+}
+
+:root[data-theme='dark'] .df-mobile-fullscreen .df-search-results-event-time,
+:root[data-theme='dark'] .df-mobile-fullscreen .df-search-results-end-time {
+  color: var(--muted) !important;
+}
+
+:root[data-theme='dark'] .df-mobile-fullscreen .df-search-results-divider {
+  border-color: var(--line) !important;
 }
 
 .schedule-frame .df-header {
@@ -985,11 +1010,12 @@ button { cursor: pointer; }
     flex-direction: row;
     gap: 14px;
   }
-  .workspace h1 { font-size: 29px; }
+  .workspace h1 { font-size: 27px; }
   .workspace-menu { margin-right: -8px; }
   .workspace-actions {
     position: static;
-    width: 100%;
+    width: calc(100% + 8px);
+    margin-right: -8px;
     margin-top: 12px;
     display: grid;
     grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -1121,7 +1147,7 @@ button { cursor: pointer; }
   .site-header { height: 64px; }
   .brand-mark { width: 32px; height: 32px; }
 
-  .workspace h1 { font-size: 28px; }
+  .workspace h1 { font-size: 26px; }
 
   .hero {
     padding: 42px 0 52px;
