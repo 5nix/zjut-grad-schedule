@@ -12,6 +12,17 @@ function positiveInteger(name, fallback) {
   return Number.isInteger(value) && value > 0 ? value : fallback;
 }
 
+function quietHoursEnd(now = Date.now()) {
+  const offset = 8 * 60 * 60 * 1000;
+  const local = new Date(now + offset);
+  const hour = local.getUTCHours();
+  if (hour >= 7 && hour < 23) return null;
+  return Date.UTC(
+    local.getUTCFullYear(), local.getUTCMonth(),
+    local.getUTCDate() + (hour >= 23 ? 1 : 0), 7,
+  ) - offset;
+}
+
 const port = positiveInteger("PORT", 8787);
 const credentialStore = new CredentialStore();
 const calendarStore = new CalendarStore();
@@ -254,7 +265,7 @@ async function refreshCalendar(studentId) {
   return feed;
 }
 
-function staleFeed(snapshot, now) {
+function staleFeed(snapshot, expiresAt) {
   const fetchedAt = Date.parse(snapshot.fetchedAt);
   if (!Number.isFinite(fetchedAt)) return null;
   const ics = String(snapshot.ics);
@@ -262,8 +273,7 @@ function staleFeed(snapshot, now) {
     ...snapshot,
     etag: snapshot.etag || `"${createHash("sha256").update(ics).digest("hex")}"`,
     lastModified: snapshot.lastModified || new Date(fetchedAt).toUTCString(),
-    // 让下一次客户端请求继续尝试更新上游。
-    expiresAt: now,
+    expiresAt,
     stale: true,
   };
 }
@@ -285,6 +295,14 @@ function schedulePayload(feed) {
 async function getCalendarFeed(studentId, { forceRefresh = false } = {}) {
   const now = Date.now();
   const cached = calendarCache.get(studentId);
+  const quietEnd = quietHoursEnd(now);
+  if (quietEnd !== null) {
+    const snapshot = cached ?? await calendarStore.load(studentId);
+    const feed = snapshot ? staleFeed(snapshot, quietEnd) : null;
+    if (!feed) throw new HttpError("学校服务暂时不可用", { status: 503 });
+    calendarCache.set(studentId, feed);
+    return { feed, state: "quiet_hours_snapshot" };
+  }
   if (!forceRefresh && cached && cached.expiresAt > now) {
     return { feed: cached, state: cached.stale ? "stale_fallback" : "cache_hit" };
   }
@@ -370,7 +388,9 @@ function cleanupRuntimeState() {
     if (entry.lastUsedAt + activeClientMs <= now) clients.delete(studentId);
   }
   for (const [studentId, feed] of calendarCache) {
-    if (feed.stale || feed.expiresAt + calendarCacheMs <= now) calendarCache.delete(studentId);
+    if (feed.stale ? feed.expiresAt <= now : feed.expiresAt + calendarCacheMs <= now) {
+      calendarCache.delete(studentId);
+    }
   }
   pruneLoginFailures(now);
   for (const [studentId, until] of authCooldowns) {
@@ -433,6 +453,24 @@ async function handle(request, response) {
     const loginStartedAt = Date.now();
     const previousCredential = await credentialStore.load(studentId);
     const previousSessionValid = previousCredential?.password === password;
+    const quietEnd = quietHoursEnd(loginStartedAt);
+    if (quietEnd !== null) {
+      const snapshot = previousSessionValid ? await calendarStore.load(studentId) : null;
+      const fallback = snapshot ? staleFeed(snapshot, quietEnd) : null;
+      if (!fallback || !Array.isArray(fallback.events)) {
+        throw new HttpError("学校服务暂时不可用", { status: 503 });
+      }
+      calendarCache.set(studentId, fallback);
+      eventLog.write("login_request", {
+        studentId,
+        state: "quiet_hours_snapshot",
+        durationMs: Date.now() - loginStartedAt,
+      });
+      clearLoginFailures(request, studentId);
+      const token = createSessionToken(studentId);
+      json(response, 200, loginPayload(studentId, token), { "set-cookie": sessionCookie(token) });
+      return;
+    }
     if (previousSessionValid) {
       try {
         const previousClient = await getClient(studentId);
