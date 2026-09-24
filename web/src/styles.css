@@ -158,24 +158,9 @@ button { cursor: pointer; }
 .brand-mark {
   width: 36px;
   height: 36px;
-  display: grid;
-  grid-template-columns: repeat(3, 1fr);
-  align-items: end;
-  gap: 3px;
-  padding: 7px;
-  background: var(--ink);
-  border-radius: 8px;
-}
-
-.brand-mark span {
   display: block;
-  background: #fff;
-  border-radius: 1px 1px 0 0;
+  object-fit: contain;
 }
-
-.brand-mark span:nth-child(1) { height: 10px; }
-.brand-mark span:nth-child(2) { height: 17px; }
-.brand-mark span:nth-child(3) { height: 13px; }
 
 .github-link {
   display: inline-flex;

@@ -15,11 +15,13 @@ function positiveInteger(name, fallback) {
 function quietHoursEnd(now = Date.now()) {
   const offset = 8 * 60 * 60 * 1000;
   const local = new Date(now + offset);
-  const hour = local.getUTCHours();
-  if (hour >= 7 && hour < 23) return null;
+  const minutes = local.getUTCHours() * 60 + local.getUTCMinutes();
+  const quietStart = 23 * 60 + 55;
+  const quietEnd = 6 * 60 + 5;
+  if (minutes >= quietEnd && minutes < quietStart) return null;
   return Date.UTC(
     local.getUTCFullYear(), local.getUTCMonth(),
-    local.getUTCDate() + (hour >= 23 ? 1 : 0), 7,
+    local.getUTCDate() + (minutes >= quietStart ? 1 : 0), 6, 5,
   ) - offset;
 }
 
@@ -458,7 +460,11 @@ async function handle(request, response) {
       const snapshot = previousSessionValid ? await calendarStore.load(studentId) : null;
       const fallback = snapshot ? staleFeed(snapshot, quietEnd) : null;
       if (!fallback || !Array.isArray(fallback.events)) {
-        throw new HttpError("学校服务暂时不可用", { status: 503 });
+        json(response, 503, {
+          code: "quiet_hours_unverified",
+          message: "学校服务正在夜间休息，期间无法登录，请于6:30后再来试试吧，这不是我们的问题QwQ",
+        });
+        return;
       }
       calendarCache.set(studentId, fallback);
       eventLog.write("login_request", {
@@ -634,7 +640,7 @@ const server = createServer((request, response) => {
       return;
     }
     if (error instanceof HttpError && [503, 504].includes(error.status)) {
-      json(response, 503, { code: "school_unavailable", message: "学校服务暂时不可用，稍后会自动重试" }, {
+      json(response, 503, { code: "school_unavailable", message: "学校服务拒绝了外部访问，请等待恢复，这不是我们的问题QwQ" }, {
         "retry-after": "60",
       });
       return;
@@ -645,7 +651,7 @@ const server = createServer((request, response) => {
       status: error.status ?? null,
       requestPath: new URL(request.url, "http://127.0.0.1").pathname,
     }));
-    json(response, 502, { code: "upstream_error", message: "学校服务暂时不可用" });
+    json(response, 502, { code: "upstream_error", message: "学校服务暂时不可用，请等待学校恢复外部访问，这不是我们的问题QwQ" });
   });
 });
 

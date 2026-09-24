@@ -855,13 +855,24 @@ export default function ScheduleWorkspace({ result, onLogout, themeDark, onToggl
         })
         const payload = await response.json().catch(() => ({}))
         if (!response.ok) {
-          throw new Error(payload.message || (response.status === 401 ? '登录状态已失效，请重新登录。' : '课程表暂时无法加载。'))
+          const message = response.status === 401
+            ? '登录信息有误，请尝试退出后重新登录'
+            : response.status === 503
+              ? '学校服务拒绝了外部访问，请等待恢复，这不是我们的问题QwQ'
+              : response.status === 502
+                ? '学校服务暂时不可用，请等待学校恢复外部访问，这不是我们的问题QwQ'
+                : payload.message || '课程表暂时无法加载。'
+          setState({ status: 'error', data: null, title: '课程表无法加载', message })
+          return
         }
-        if (!Array.isArray(payload.events)) throw new Error('服务未返回有效的课程数据。')
+        if (!Array.isArray(payload.events)) {
+          setState({ status: 'error', data: null, title: '课程表没有加载出来', message: '服务未返回有效的课程数据。' })
+          return
+        }
         setState({ status: 'ready', data: payload, message: '' })
       } catch (error) {
         if (error.name === 'AbortError') return
-        setState({ status: 'error', data: null, message: error.message || '课程表暂时无法加载。' })
+        setState({ status: 'error', data: null, title: '课程表没有加载出来', message: error.message || '课程表暂时无法加载。' })
       }
     }
 
@@ -978,7 +989,7 @@ export default function ScheduleWorkspace({ result, onLogout, themeDark, onToggl
         {state.status === 'error' && (
           <div className="schedule-state">
             <div className="schedule-state__icon">!</div>
-            <strong>课程表没有加载出来</strong>
+            <strong>{state.title}</strong>
             <small>{state.message}</small>
             <button className="primary-button" type="button" onClick={() => reloadSchedule(true)}>
               重新加载

@@ -67,24 +67,21 @@ function Icon({ name, size = 20 }) {
 }
 
 function getErrorState(response, payload) {
-  const message = typeof payload?.message === 'string' ? payload.message : ''
-
   switch (response.status) {
     case 400:
-      return { type: 'error', title: '输入信息有误', message: message || '请检查学号和密码格式后重试。' }
+      return { type: 'error', title: '输入格式有误', message: '学号或密码格式不正确' }
     case 401:
-      return { type: 'error', title: '登录失败', message: message || '学号或密码不正确，请核对后重试。' }
+      return { type: 'error', title: '登录验证失败', message: '请检查账号密码是否正确，或稍后再试' }
     case 409:
-      return { type: 'warning', title: '学校要求验证码', message: message || '请先在学校系统完成验证，然后返回此页重试。' }
-    case 429: {
-      const retryAfter = response.headers.get('Retry-After')
-      const suffix = retryAfter ? `请在 ${retryAfter} 秒后重试。` : '请稍后再试。'
-      return { type: 'warning', title: '尝试次数过多', message: message || suffix }
-    }
+      return { type: 'warning', title: '学校要求验证码', message: '请稍后再试' }
+    case 429:
+      return { type: 'warning', title: '尝试次数过多', message: '请稍后再试' }
     case 503:
-      return { type: 'warning', title: '学校服务暂时不可用', message: message || '校务系统可能正在维护，请稍后再试。' }
+      return payload?.code === 'quiet_hours_unverified'
+        ? { type: 'warning', title: '学校服务暂不可用', message: '学校服务正在夜间休息，期间无法登录，请于6:30后再来试试吧，这不是我们的问题QwQ' }
+        : { type: 'warning', title: '学校服务暂不可用', message: '学校服务拒绝了外部访问，请等待恢复，这不是我们的问题QwQ' }
     default:
-      return { type: 'error', title: '暂时无法登录', message: message || '请检查网络连接后重试。' }
+      return { type: 'error', title: '学校服务错误', message: '学校服务暂时不可用，请等待学校恢复外部访问，这不是我们的问题QwQ' }
   }
 }
 
@@ -102,13 +99,7 @@ function Notice({ notice }) {
 }
 
 function BrandMark() {
-  return (
-    <div className="brand-mark" aria-hidden="true">
-      <span />
-      <span />
-      <span />
-    </div>
-  )
+  return <img className="brand-mark" src="/icons/brand-icon.svg?v=4" alt="" />
 }
 
 function LoginForm({ onSuccess }) {
@@ -125,7 +116,7 @@ function LoginForm({ onSuccess }) {
     const cleanStudentId = studentId.trim()
 
     if (!cleanStudentId || !password) {
-      setNotice({ type: 'error', title: '请完整填写', message: '学号和密码都是必填项。' })
+      setNotice({ type: 'error', title: '登录信息不完整', message: '学号和密码都是必填项' })
       return
     }
 
@@ -158,7 +149,7 @@ function LoginForm({ onSuccess }) {
         calendarUrl: payload.calendarUrl,
       })
     } catch {
-      setNotice({ type: 'error', title: '无法连接服务', message: '请确认网络正常，或稍后再试。' })
+      setNotice({ type: 'error', title: '无法连接网络', message: '请确认网络连接正常，或稍后再试' })
     } finally {
       setLoading(false)
     }
@@ -346,7 +337,7 @@ export default function App() {
                 <span /><span /><span /><span /><span /><span />
               </div>
               <div className="card-heading">
-                <h2>登录浙江工业大学<br />研究生账号</h2>
+                <h2>登录ZJUT研究生账号</h2>
               </div>
               <LoginForm onSuccess={setResult} />
             </section>

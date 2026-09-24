@@ -3,7 +3,7 @@ const CACHE_NAME = 'zjut-grad-schedule-shell-v1'
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
-      .then((cache) => cache.addAll(['/', '/manifest.webmanifest', '/icons/icon-192.png', '/icons/icon-512.png']))
+      .then((cache) => cache.addAll(['/', '/manifest.webmanifest', '/icons/icon.svg?v=4', '/icons/brand-icon.svg?v=4', '/icons/icon-180.png?v=4', '/icons/icon-192.png?v=4', '/icons/icon-512.png?v=4']))
       .then(() => self.skipWaiting()),
   )
 })
