@@ -31,6 +31,9 @@ self.addEventListener('fetch', (event) => {
         }
         return response
       })
-      .catch(() => caches.match(event.request).then((cached) => cached || caches.match('/'))),
+      .catch(() => caches.match(event.request).then((cached) => {
+        if (cached) return cached
+        return event.request.mode === 'navigate' ? caches.match('/') : Response.error()
+      })),
   )
 })
