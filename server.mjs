@@ -259,6 +259,11 @@ async function refreshCalendar(studentId) {
     }));
   }
   if (rendered.warnings.length) {
+    eventLog.write("calendar_parse_warnings", {
+      studentId,
+      warningCount: rendered.warnings.length,
+      warnings: rendered.warnings,
+    });
     console.warn(JSON.stringify({
       event: "calendar_parse_warnings",
       warningCount: rendered.warnings.length,
