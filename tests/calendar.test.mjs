@@ -6,8 +6,12 @@ import { parseScheduleEventsFromIcs } from "../lib/calendar-store.mjs";
 const schedule = "1-3单周 星期五[1-4节];3周 星期六[1-4节];4-5周 星期五[9-12节];6-8周 星期五[9-12节]";
 const periodsBySemester = new Map([["20261", new Map([
   ["1", { start: "0800", end: "0845" }],
+  ["2", { start: "0855", end: "0940" }],
   ["4", { start: "1050", end: "1135" }],
+  ["6", { start: "1330", end: "1415" }],
   ["9", { start: "1620", end: "1705" }],
+  ["10", { start: "1830", end: "1915" }],
+  ["11", { start: "1925", end: "2010" }],
   ["12", { start: "2020", end: "2105" }],
 ])]]);
 
@@ -58,6 +62,62 @@ test("完整恢复8次安排及正确日期、时间和课次，JSON与ICS一致
   const icsEvents = parseScheduleEventsFromIcs(rendered.ics);
   assert.deepEqual(icsEvents.map(({ start, end }) => [start, end]),
     jsonEvents.map(({ start, end }) => [start, end]));
+  assert.deepEqual(jsonEvents.map((event) => event.teachingWeek), [1, 3, 3, 4, 5, 6, 7, 8]);
+  assert.deepEqual(icsEvents.map((event) => event.teachingWeek), jsonEvents.map((event) => event.teachingWeek));
+});
+
+test("从最早安排选锚点，恢复周四段在前的12次课程，段落重排不改变日程", () => {
+  const source = "1-6周 星期四[1-4节];1周 星期一[6-9节];2-3,5-6周 星期一[6-9节];4周 星期六[6-9节]";
+  const data = calendarData({ PKSJ: source, SCSKRQ: "2024-09-16" });
+  const { events, warnings } = expandCourses(data);
+  assert.deepEqual(warnings, []);
+  assert.equal(events.length, 12);
+  assert.deepEqual(events.map((event) => event.date), [
+    "20240916", "20240919", "20240923", "20240926", "20240930", "20241003",
+    "20241010", "20241012", "20241014", "20241017", "20241021", "20241024",
+  ]);
+  const rearranged = expandCourses(calendarData({ PKSJ: source.split(";").reverse().join(";"), SCSKRQ: "2024-09-16" }));
+  assert.deepEqual(rearranged.events, events);
+});
+
+test("首课在第10周且周五段在前时，恢复16次课程与教学周", () => {
+  const { events, warnings } = expandCourses(calendarData({
+    PKSJ: "10-17周 星期五[1-4节];10-13,15-17周 星期二[1-2节];14周 星期二[10-11节]",
+    SCSKRQ: "2025-04-29",
+  }));
+  assert.deepEqual(warnings, []);
+  assert.equal(events.length, 16);
+  assert.equal(events[0].date, "20250429");
+  assert.equal(events[0].teachingWeek, 10);
+  assert.equal(events.at(-1).date, "20250620");
+  assert.equal(events.at(-1).teachingWeek, 17);
+  assert.equal(events.find((event) => event.date === "20250527").start, "1830");
+});
+
+test("未排课课程正常略过，只有不完整的排课信息才产生警告", () => {
+  assert.deepEqual(expandCourses(calendarData({ PKSJ: null, SCSKRQ: null })), { events: [], warnings: [] });
+  assert.equal(expandCourses(calendarData({ SCSKRQ: null })).warnings.length, 1);
+});
+
+test("未知段和无效范围不会被部分匹配后悄悄丢弃", () => {
+  for (const source of [
+    "1-8周 星期五[1-4节];未知排课格式",
+    "未知前缀1-8周 星期五[1-4节]",
+    "8-1周 星期五[1-4节]",
+    "1-8周 星期五[1,x节]",
+  ]) {
+    assert.throws(() => parseSchedulePatterns(source));
+    const result = expandCourses(calendarData({ PKSJ: source }));
+    assert.equal(result.events.length, 0);
+    assert.equal(result.warnings.length, 1);
+  }
+});
+
+test("旧ICS快照未带教学周时仍可正常读取", () => {
+  const rendered = renderCalendar(calendarData());
+  const events = parseScheduleEventsFromIcs(rendered.ics.replace(/^X-ZJUT-TEACHING-WEEK:.*\r\n/gm, ""));
+  assert.equal(events.length, 8);
+  assert.ok(events.every((event) => event.teachingWeek === undefined));
 });
 
 test("首次日期确实不匹配时仍跳过，并记录足够的诊断字段", () => {

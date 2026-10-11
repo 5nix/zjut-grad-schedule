@@ -11,6 +11,7 @@ import {
   useCalendarApp,
 } from '@dayflow/react'
 import { Temporal } from 'temporal-polyfill'
+import { buildTeachingTerms, teachingWeekOn } from './teaching-week.mjs'
 
 const API_BASE = (import.meta.env.VITE_API_BASE_URL || '').replace(/\/$/, '')
 const GITHUB_URL = 'https://github.com/5nix/zjut-grad-schedule'
@@ -126,6 +127,7 @@ function toCalendarEvents(events) {
       campus: event.campus,
       semester: event.semester,
       lessonText: event.lessonText,
+      teachingWeek: event.teachingWeek,
     },
   }))
 }
@@ -174,8 +176,9 @@ function CourseDetail({ event, onClose }) {
       <dl className="course-detail__list">
         {meta.location && <><dt>地点</dt><dd>{meta.location}</dd></>}
         {meta.campus && <><dt>校区</dt><dd>{meta.campus}</dd></>}
-        {meta.semester && <><dt>学期</dt><dd>{meta.semester}</dd></>}
         {meta.lessonText && <><dt>课次</dt><dd>{meta.lessonText}</dd></>}
+        {Number.isInteger(meta.teachingWeek) && meta.teachingWeek > 0 && <><dt>教学周</dt><dd>{meta.teachingWeek}</dd></>}
+        {meta.semester && <><dt>学期</dt><dd>{meta.semester}</dd></>}
         {description && <><dt>备注</dt><dd className="course-detail__description">{description}</dd></>}
       </dl>
       {onClose && <button className="course-detail__close" type="button" onClick={onClose}>关闭</button>}
@@ -306,6 +309,7 @@ function ScheduleCalendar({ events, themeDark }) {
   const detailReplayRef = useRef(false)
   const detailCloseTimerRef = useRef(null)
   const calendarEvents = useMemo(() => toCalendarEvents(events), [events])
+  const teachingTerms = useMemo(() => buildTeachingTerms(events), [events])
   const calendar = useCalendarApp({
     views: [
       createDayView({
@@ -540,23 +544,32 @@ function ScheduleCalendar({ events, themeDark }) {
     const app = calendar.app
     let frameId = 0
 
-    function syncAgendaTitle() {
+    function syncViewTitle() {
       window.cancelAnimationFrame(frameId)
       frameId = window.requestAnimationFrame(() => {
-        if (app.state.currentView !== ViewType.AGENDA) return
-
-        const title = calendarRootRef.current?.querySelector('.df-agenda-view .df-view-header-title')
+        const view = app.state.currentView
+        if (view !== ViewType.AGENDA && view !== ViewType.WEEK) return
+        const title = calendarRootRef.current?.querySelector(view === ViewType.AGENDA
+          ? '.df-agenda-view .df-view-header-title' : '.df-week-view .df-view-header-title')
         if (!title) return
 
         const start = new Date(app.getCurrentDate())
-        start.setHours(0, 0, 0, 0)
-        const end = new Date(start)
-        end.setDate(end.getDate() + 13)
-        const range = `${start.getMonth() + 1}.${start.getDate()}-${end.getMonth() + 1}.${end.getDate()}`
-        const year = `${end.getFullYear()}年`
+        let range
+        let year
+        if (view === ViewType.WEEK) {
+          const week = teachingWeekOn(teachingTerms, start)
+          range = week === null ? `${start.getFullYear()}年${start.getMonth() + 1}月` : `第${week}周`
+          year = week === null ? '' : `${String(start.getFullYear()).slice(-2)}年${start.getMonth() + 1}月`
+        } else {
+          start.setHours(0, 0, 0, 0)
+          const end = new Date(start)
+          end.setDate(end.getDate() + 13)
+          range = `${start.getMonth() + 1}.${start.getDate()}-${end.getMonth() + 1}.${end.getDate()}`
+          year = `${end.getFullYear()}年`
+        }
         const titleKey = `${range}|${year}`
 
-        if (title.dataset.scheduleAgendaTitle === titleKey) return
+        if (title.dataset.scheduleAgendaTitle === titleKey && title.textContent === range + year) return
 
         title.dataset.scheduleAgendaTitle = titleKey
         title.replaceChildren()
@@ -569,22 +582,23 @@ function ScheduleCalendar({ events, themeDark }) {
         yearNode.className = 'schedule-agenda-title-year'
         yearNode.textContent = year
 
-        title.append(rangeNode, yearNode)
+        title.append(rangeNode)
+        if (year) title.append(yearNode)
       })
     }
 
     const unsubscribe = app.subscribe(() => {
       const nextView = app.state.currentView
       setActiveView((currentView) => currentView === nextView ? currentView : nextView)
-      syncAgendaTitle()
+      syncViewTitle()
     })
 
-    syncAgendaTitle()
+    syncViewTitle()
     return () => {
       window.cancelAnimationFrame(frameId)
       unsubscribe()
     }
-  }, [calendar.app])
+  }, [calendar.app, teachingTerms])
 
   useEffect(() => {
     const sourceById = new Map(events.map((event) => [event.id, event]))

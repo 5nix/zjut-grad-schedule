@@ -1061,13 +1061,14 @@ button { cursor: pointer; }
   white-space: pre-line;
 }
 
-.schedule-frame .df-agenda-view .df-view-header-title {
+.schedule-frame .df-agenda-view .df-view-header-title,
+.schedule-frame .df-week-view .df-view-header-title {
   align-items: baseline;
   display: flex;
   gap: 8px;
 }
 
-.schedule-frame .df-agenda-view .schedule-agenda-title-year {
+.schedule-frame .schedule-agenda-title-year {
   color: var(--df-color-muted-foreground);
   font-size: 0.5em;
   font-weight: 500;
