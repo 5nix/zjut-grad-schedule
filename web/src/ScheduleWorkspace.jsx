@@ -177,7 +177,7 @@ function CourseDetail({ event, onClose }) {
         {meta.location && <><dt>地点</dt><dd>{meta.location}</dd></>}
         {meta.campus && <><dt>校区</dt><dd>{meta.campus}</dd></>}
         {meta.lessonText && <><dt>课次</dt><dd>{meta.lessonText}</dd></>}
-        {Number.isInteger(meta.teachingWeek) && meta.teachingWeek > 0 && <><dt>教学周</dt><dd>{meta.teachingWeek}</dd></>}
+        {Number.isInteger(meta.teachingWeek) && meta.teachingWeek > 0 && <><dt>教学周</dt><dd>第{meta.teachingWeek}周</dd></>}
         {meta.semester && <><dt>学期</dt><dd>{meta.semester}</dd></>}
         {description && <><dt>备注</dt><dd className="course-detail__description">{description}</dd></>}
       </dl>
